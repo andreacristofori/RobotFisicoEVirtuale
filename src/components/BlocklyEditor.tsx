@@ -377,6 +377,7 @@ Blockly.defineBlocksWithJsonArray([
         "name": "AXIS",
         "options": [
           ["Imbardata (Yaw)", "YAW"],
+          ["Valore assoluto di Yaw (Imbardata)", "YAW_ABS"],
           ["Beccheggio (Pitch)", "PITCH"],
           ["Rollio (Roll)", "ROLL"]
         ]
@@ -414,6 +415,7 @@ Blockly.defineBlocksWithJsonArray([
         "name": "AXIS",
         "options": [
           ["Yaw (Imbardata)", "YAW"],
+          ["Valore assoluto di Yaw", "YAW_ABS"],
           ["Pitch (Beccheggio)", "PITCH"],
           ["Roll (Rollio)", "ROLL"]
         ]
@@ -825,10 +827,14 @@ pythonGenerator.forBlock['spike_robot_spin_degrees'] = function(block: any, gene
 pythonGenerator.forBlock['spike_gyro_get_angle'] = function(block: any, generator: any) {
   const axis = block.getFieldValue('AXIS');
   let index = '0';
-  if (axis === 'YAW') index = '0';
+  if (axis === 'YAW' || axis === 'YAW_ABS') index = '0';
   else if (axis === 'PITCH') index = '1';
   else if (axis === 'ROLL') index = '2';
   
+  if (axis === 'YAW_ABS') {
+    const code = `abs(int(motion_sensor.tilt_angles()[0] / 10))`;
+    return [code, generator.ORDER_ATOMIC];
+  }
   const code = `int(motion_sensor.tilt_angles()[${index}] / 10)`;
   return [code, generator.ORDER_ATOMIC];
 };
@@ -843,9 +849,13 @@ pythonGenerator.forBlock['spike_gyro_wait_angle'] = function(block: any, generat
   const comp = block.getFieldValue('COMP');
   const angle = generator.valueToCode(block, 'ANGLE', generator.ORDER_NONE) || '90';
   let index = '0';
-  if (axis === 'YAW') index = '0';
+  if (axis === 'YAW' || axis === 'YAW_ABS') index = '0';
   else if (axis === 'PITCH') index = '1';
   else if (axis === 'ROLL') index = '2';
+  
+  if (axis === 'YAW_ABS') {
+    return `while not (abs(int(motion_sensor.tilt_angles()[0] / 10)) ${comp} int(${angle})):\n    await runloop.sleep_ms(10)\n`;
+  }
   return `while not (int(motion_sensor.tilt_angles()[${index}] / 10) ${comp} int(${angle})):\n    await runloop.sleep_ms(10)\n`;
 };
 

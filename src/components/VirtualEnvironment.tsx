@@ -850,9 +850,9 @@ export default function VirtualEnvironment({
       e = e.replace(/_safe_sensor\(motion_sensor\.roll_angle\)/g, 'getRoll()');
       
       // Gyro/tilt angles standard calls
-      e = e.replace(/motion_sensor\.tilt_angles\(\)\[0\]/g, 'getYaw()');
-      e = e.replace(/motion_sensor\.tilt_angles\(\)\[1\]/g, 'getPitch()');
-      e = e.replace(/motion_sensor\.tilt_angles\(\)\[2\]/g, 'getRoll()');
+      e = e.replace(/motion_sensor\.tilt_angles\(\)\[0\]/g, '(getYaw() * 10)');
+      e = e.replace(/motion_sensor\.tilt_angles\(\)\[1\]/g, '(getPitch() * 10)');
+      e = e.replace(/motion_sensor\.tilt_angles\(\)\[2\]/g, '(getRoll() * 10)');
       
       // Replace Python int and float with safe non-reserved JS parameter names
       e = e.replace(/\bint\b/g, 'py_int');
@@ -1236,7 +1236,7 @@ export default function VirtualEnvironment({
 
     const resetYaw = (angle = 0) => {
       if (execId !== activeExecutionId.current) return;
-      robotRef.current.yawResetAngle = robotRef.current.angle - angle;
+      robotRef.current.yawResetAngle = robotRef.current.angle - (angle / 10);
     };
 
     const getYaw = () => {
