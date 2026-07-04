@@ -854,9 +854,6 @@ export default function VirtualEnvironment({
       e = e.replace(/motion_sensor\.tilt_angles\(\)\[1\]/g, 'getPitch()');
       e = e.replace(/motion_sensor\.tilt_angles\(\)\[2\]/g, 'getRoll()');
       
-      e = e.replace(/len\((.*?)\)/g, 'String($1).length');
-      e = e.replace(/str\((.*?)\)/g, 'String($1)');
-      
       // Replace Python int and float with safe non-reserved JS parameter names
       e = e.replace(/\bint\b/g, 'py_int');
       e = e.replace(/\bfloat\b/g, 'py_float');
@@ -1339,7 +1336,8 @@ export default function VirtualEnvironment({
         'playNote', 'beep', 'runMotor', 'stopMotor', 'runMotorForDegrees',
         'resetYaw', 'getColor', 'getReflection', 'getDistance', 'getForce',
         'getYaw', 'getPitch', 'getRoll', 'print',
-        'py_int', 'py_float', 'str', 'len', 'abs', 'round', 'min', 'max',
+        'py_int', 'py_float', 'py_str', 'py_len', 'py_abs', 'py_round', 'py_min', 'py_max',
+        'str', 'len', 'abs', 'round', 'min', 'max',
         `try {
           ${jsCode}
         } catch(e) {
@@ -1355,7 +1353,8 @@ export default function VirtualEnvironment({
         playNote, beep, runMotor, stopMotor, runMotorForDegrees,
         resetYaw, getColor, getReflection, getDistance, getForce,
         getYaw, getPitch, getRoll, print,
-        py_int, py_float, py_str, py_len, py_abs, py_round, py_min, py_max
+        py_int, py_float, py_str, py_len, py_abs, py_round, py_min, py_max,
+        py_str, py_len, py_abs, py_round, py_min, py_max
       );
 
       setConsoleLogs(prev => [...prev, '[Simulatore] Esecuzione completata.']);
