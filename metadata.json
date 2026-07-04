@@ -1,0 +1,10 @@
+{
+  "name": "OpenRobert\u0259",
+  "description": "Proviamo un virtuale",
+  "requestFramePermissions": [
+    "serial"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
