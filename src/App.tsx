@@ -21,6 +21,7 @@ interface SensorConfig {
   id: number;
   port: string;
   type: string;
+  direction?: 'forward' | 'down';
 }
 
 const highlightWithBlockly = (code: string) => {
@@ -96,10 +97,10 @@ export default function App() {
       }
     }
     return [
-      { id: 1, port: '', type: '' },
-      { id: 2, port: '', type: '' },
-      { id: 3, port: '', type: '' },
-      { id: 4, port: '', type: '' },
+      { id: 1, port: '', type: '', direction: 'down' },
+      { id: 2, port: '', type: '', direction: 'down' },
+      { id: 3, port: '', type: '', direction: 'down' },
+      { id: 4, port: '', type: '', direction: 'down' },
     ];
   });
 
@@ -1210,23 +1211,23 @@ except: pass
 
                 {/* Sensori */}
                 <div className="flex flex-col">
-                  <h3 className="font-extrabold text-base text-emerald-800 mb-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-100 border-2 border-emerald-300 w-fit shadow-sm">
+                  <h3 className="font-extrabold text-xs text-emerald-800 mb-1.5 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-100 border-2 border-emerald-300 w-fit shadow-sm">
                     👁️ Sensori
                   </h3>
-                  <div className="space-y-2 flex-1">
+                  <div className="space-y-1.5 flex-1">
                     {sensors.map(sensor => (
                       <div 
                         key={`sensor-${sensor.id}`} 
-                        className={`p-2.5 bg-white rounded-xl border-2 transition-all duration-200 shadow-sm hover:shadow-md ${sensor.port ? 'border-emerald-400 bg-emerald-50/10' : 'border-neutral-200'}`}
+                        className={`p-1.5 bg-white rounded-lg border-2 transition-all duration-200 shadow-sm hover:shadow-md ${sensor.port ? 'border-emerald-400 bg-emerald-50/10' : 'border-neutral-200'}`}
                       >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className={`text-xs font-extrabold ${sensor.port ? 'text-emerald-700' : 'text-neutral-500'}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-[11px] font-extrabold ${sensor.port ? 'text-emerald-700' : 'text-neutral-500'}`}>
                             Sensore {sensor.id}
                           </span>
                           <select 
                             value={sensor.port}
                             onChange={(e) => handleSensorChange(sensor.id, 'port', e.target.value)}
-                            className="text-xs font-bold border-2 border-emerald-300 rounded-md p-1 bg-emerald-50 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer"
+                            className="text-[10px] font-bold border-2 border-emerald-300 rounded-md p-0.5 bg-emerald-50 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer"
                           >
                             <option value="">Porta...</option>
                             <option value="A">Porta A</option>
@@ -1240,13 +1241,28 @@ except: pass
                         <select 
                           value={sensor.type}
                           onChange={(e) => handleSensorChange(sensor.id, 'type', e.target.value)}
-                          className={`w-full text-xs font-bold border-2 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer ${sensor.type ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-neutral-200'}`}
+                          className={`w-full text-[10px] font-bold border-2 rounded-md p-0.5 focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer ${sensor.type ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-neutral-200'}`}
                         >
                           <option value="">Tipo sensore...</option>
                           <option value="color">Colore 🔴🔵</option>
                           <option value="distance">Distanza (Ultrasuoni) 📏</option>
                           <option value="force">Tocco/Forza 🏋️</option>
                         </select>
+                        {sensor.type === 'color' && (
+                          <div className="mt-1 flex items-center justify-between bg-emerald-50/50 p-1 rounded-md border border-emerald-200/50">
+                            <span className="text-[9px] font-extrabold text-emerald-800 uppercase tracking-wider">
+                              Sguardo:
+                            </span>
+                            <select
+                              value={sensor.direction || 'down'}
+                              onChange={(e) => handleSensorChange(sensor.id, 'direction', e.target.value)}
+                              className="text-[9px] font-extrabold border-2 border-emerald-300 rounded-md px-1 py-0 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 cursor-pointer text-emerald-800"
+                            >
+                              <option value="down">In basso ⬇️</option>
+                              <option value="forward">In avanti ➡️</option>
+                            </select>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

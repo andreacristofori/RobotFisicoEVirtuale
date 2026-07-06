@@ -2048,11 +2048,48 @@ export default function VirtualEnvironment({
         const sensorY = rob.y + localX * Math.sin(headingRad) + localY * Math.cos(headingRad);
 
         if (sensor.type === 'color') {
+          let sampleX = sensorX;
+          let sampleY = sensorY;
+          if (sensor.direction === 'forward') {
+            sampleX += 25 * Math.cos(headingRad);
+            sampleY += 25 * Math.sin(headingRad);
+          }
+
           // Read pixel color from offscreen canvas
           let r = 255, g = 255, b = 255;
-          const roundedX = Math.round(sensorX);
-          const roundedY = Math.round(sensorY);
-          if (roundedX >= 0 && roundedX < W && roundedY >= 0 && roundedY < H) {
+          const roundedX = Math.round(sampleX);
+          const roundedY = Math.round(sampleY);
+
+          // Check if we hit any obstacle when looking forward
+          let obstacleHit: any = null;
+          if (sensor.direction === 'forward') {
+            obstaclesRef.current.forEach(obs => {
+              if (obs.shape === 'circle') {
+                const radius = obs.w / 2;
+                const cx = obs.x + radius;
+                const cy = obs.y + radius;
+                const dx = sampleX - cx;
+                const dy = sampleY - cy;
+                if (dx * dx + dy * dy <= radius * radius) {
+                  obstacleHit = obs;
+                }
+              } else {
+                if (sampleX >= obs.x && sampleX <= obs.x + obs.w && sampleY >= obs.y && sampleY <= obs.y + obs.h) {
+                  obstacleHit = obs;
+                }
+              }
+            });
+          }
+
+          if (obstacleHit) {
+            const hex = obstacleHit.pushable ? (obstacleHit.color || '#D97706') : '#4B5563';
+            const cleanHex = hex.replace('#', '');
+            if (cleanHex.length === 6 || cleanHex.length === 3) {
+              r = parseInt(cleanHex.length === 3 ? cleanHex[0] + cleanHex[0] : cleanHex.substring(0, 2), 16);
+              g = parseInt(cleanHex.length === 3 ? cleanHex[1] + cleanHex[1] : cleanHex.substring(2, 4), 16);
+              b = parseInt(cleanHex.length === 3 ? cleanHex[2] + cleanHex[2] : cleanHex.substring(4, 6), 16);
+            }
+          } else if (sensor.direction !== 'forward' && roundedX >= 0 && roundedX < W && roundedY >= 0 && roundedY < H) {
             try {
               const p = offCtx.getImageData(roundedX, roundedY, 1, 1).data;
               r = p[0];
@@ -2388,20 +2425,59 @@ export default function VirtualEnvironment({
         ctx.rotate(headingRad);
 
         if (sensor.type === 'color') {
-          // Draw outer casing (celeste circle with dark gray outline)
-          ctx.fillStyle = '#38BDF8';
-          ctx.strokeStyle = '#374151';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(0, 0, 7, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
+          if (sensor.direction === 'forward') {
+            // Draw outer casing as a horizontal cylinder (capsule pointing forward)
+            ctx.fillStyle = '#38BDF8';
+            ctx.strokeStyle = '#374151';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(-9, -5.5, 18, 11, 5.5);
+            ctx.fill();
+            ctx.stroke();
 
-          // Draw active color lens
-          ctx.fillStyle = reading ? reading.colorHex : '#CCCCCC';
-          ctx.beginPath();
-          ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
-          ctx.fill();
+            // Draw active color lens (smaller capsule inside)
+            ctx.fillStyle = reading ? reading.colorHex : '#CCCCCC';
+            ctx.beginPath();
+            ctx.roundRect(-6, -3.5, 12, 7, 3.5);
+            ctx.fill();
+
+            // Highlight/emitter indicator at the front tip
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(5, 0, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw a sight line and visual target indicator
+            ctx.strokeStyle = reading ? reading.colorHex : '#38BDF8';
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([2, 2]);
+            ctx.beginPath();
+            ctx.moveTo(9, 0); // start at the edge of the cylinder casing
+            ctx.lineTo(25, 0); // draw line forward to reading point (25px from center)
+            ctx.stroke();
+            ctx.setLineDash([]); // reset
+
+            // Small indicator dot at the reading point
+            ctx.fillStyle = reading ? reading.colorHex : '#38BDF8';
+            ctx.beginPath();
+            ctx.arc(25, 0, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            // Draw standard downward-facing circle sensor
+            ctx.fillStyle = '#38BDF8';
+            ctx.strokeStyle = '#374151';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw active color lens
+            ctx.fillStyle = reading ? reading.colorHex : '#CCCCCC';
+            ctx.beginPath();
+            ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
         } else if (sensor.type === 'distance') {
           // Draw casing (green)
           ctx.fillStyle = '#22C55E';
