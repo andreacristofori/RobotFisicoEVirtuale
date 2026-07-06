@@ -849,6 +849,24 @@ export default function VirtualEnvironment({
       e = e.replace(/_safe_sensor\(motion_sensor\.pitch_angle\)/g, 'getPitch()');
       e = e.replace(/_safe_sensor\(motion_sensor\.roll_angle\)/g, 'getRoll()');
       
+      // Replace button ternary pattern with false
+      e = e.replace(/\(button\.pressed\(button\.([A-Z_]+)\)\s+if\s+hasattr\(button,\s+'\1'\)\s+else\s+\(button\.([a-z_]+)\.is_pressed\(\)\s+if\s+hasattr\(button,\s+'\2'\)\s+else\s+False\)\)/gi, 'false');
+      
+      // Support isinstance translations to typeof/isArray checks
+      e = e.replace(/\bisinstance\(([^,]+),\s*Number\)/g, "typeof $1 === 'number'");
+      e = e.replace(/\bisinstance\(([^,]+),\s*\(int,\s*float\)\)/g, "typeof $1 === 'number'");
+      e = e.replace(/\bisinstance\(([^,]+),\s*str\)/g, "typeof $1 === 'string'");
+      e = e.replace(/\bisinstance\(([^,]+),\s*list\)/g, "Array.isArray($1)");
+      e = e.replace(/\bisinstance\(([^,]+),\s*dict\)/g, "(typeof $1 === 'object' && $1 !== null)");
+      e = e.replace(/\bisinstance\(([^,]+),\s*bool\)/g, "typeof $1 === 'boolean'");
+
+      // Generic Python ternary replacement: expr1 if cond else expr2 -> (cond ? expr1 : expr2)
+      let prev;
+      do {
+        prev = e;
+        e = e.replace(/\b([a-zA-Z0-9_.\(\)\[\]'"]+)\s+if\s+([a-zA-Z0-9_.\(\)\[\]!=<>, '"&|!]+)\s+else\s+([a-zA-Z0-9_.\(\)\[\]'"]+)\b/g, '($2 ? $1 : $3)');
+      } while (e !== prev);
+      
       // Gyro/tilt angles standard calls
       e = e.replace(/motion_sensor\.tilt_angles\(\)\[0\]/g, '(getYaw() * 10)');
       e = e.replace(/motion_sensor\.tilt_angles\(\)\[1\]/g, '(getPitch() * 10)');
@@ -1330,6 +1348,18 @@ export default function VirtualEnvironment({
         return Math.max(...args.map(Number));
       };
 
+      const buttonMock = {
+        pressed: () => false,
+        LEFT: 'LEFT',
+        RIGHT: 'RIGHT',
+        CENTER: 'CENTER',
+        power: { is_pressed: () => false },
+        center: { is_pressed: () => false },
+        left: { is_pressed: () => false },
+        right: { is_pressed: () => false },
+      };
+      const hasattrMock = (obj: any, prop: string) => obj && prop in obj;
+
       const runnerFn = new AsyncFunction(
         'sleep', 'drivePair', 'drivePairForDegrees', 'stopPair',
         'writeLightMatrix', 'clearLightMatrix', 'showImageLightMatrix',
@@ -1338,6 +1368,7 @@ export default function VirtualEnvironment({
         'getYaw', 'getPitch', 'getRoll', 'print',
         'py_int', 'py_float', 'py_str', 'py_len', 'py_abs', 'py_round', 'py_min', 'py_max',
         'str', 'len', 'abs', 'round', 'min', 'max',
+        'button', 'hasattr',
         `try {
           ${jsCode}
         } catch(e) {
@@ -1354,7 +1385,8 @@ export default function VirtualEnvironment({
         resetYaw, getColor, getReflection, getDistance, getForce,
         getYaw, getPitch, getRoll, print,
         py_int, py_float, py_str, py_len, py_abs, py_round, py_min, py_max,
-        py_str, py_len, py_abs, py_round, py_min, py_max
+        py_str, py_len, py_abs, py_round, py_min, py_max,
+        buttonMock, hasattrMock
       );
 
       setConsoleLogs(prev => [...prev, '[Simulatore] Esecuzione completata.']);

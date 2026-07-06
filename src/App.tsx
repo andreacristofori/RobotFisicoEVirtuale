@@ -689,18 +689,6 @@ except Exception as root_e:
       setPort(p);
       setIsConnected(true);
       setLogs(prev => prev + "Connesso a LEGO Spike Prime.\n");
-      
-      for (let i = 0; i < TOTAL_SLOTS; i++) {
-        localStorage.removeItem(`spike_slot_${i}_workspace`);
-        localStorage.removeItem(`spike_slot_${i}_python`);
-      }
-      setBlocklyCode('');
-      setCustomCode('');
-      if (blocklyEditorRef.current) {
-         blocklyEditorRef.current.loadWorkspace(null); // Clear workspace
-      }
-      setCurrentSlot(0);
-      localStorage.setItem('spike_current_slot', '0');
 
       // Svuota lo schermo del robot alla connessione
       try {

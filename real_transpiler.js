@@ -1,5 +1,4 @@
-export const transpilePythonToJsWrapper = (pythonCode: string) => {
-const transpilePythonToJs = (pythonCode: string) => {
+const transpilePythonToJs = (pythonCode) => {
     // 1. Rimuove indentazione iniziale comune
     const stripCommonIndent = (codeStr: string): string => {
       const lines = codeStr.split('\n');
@@ -23,7 +22,7 @@ const transpilePythonToJs = (pythonCode: string) => {
     const strippedPython = stripCommonIndent(pythonCode);
 
     // 2. Sostituzioni Espressioni Python Base
-    const translateExpression = (expr: string): string => {
+    const translateExpression = (expr) => {
       let e = expr;
       
       e = e.replace(/\bnot\b/g, '!');
@@ -70,7 +69,7 @@ const transpilePythonToJs = (pythonCode: string) => {
     };
 
     // 3. Sostituzioni Statements Base
-    const translateStatement = (stmt: string): string => {
+    const translateStatement = (stmt) => {
       let s = stmt;
       
       // replace sleep/delays (standard and internal)
@@ -135,7 +134,7 @@ const transpilePythonToJs = (pythonCode: string) => {
     
     // 4. Scansione preliminare delle variabili per dichiarazione
     const varRegex = /^[ \t]*([a-zA-Z_][a-zA-Z0-9_]*)\s*=[^=]/;
-    const declaredVars = new Set<string>();
+    const declaredVars = new Set();
     const lines = strippedPython.split('\n');
     for (const line of lines) {
       const match = line.match(varRegex);
@@ -293,7 +292,7 @@ const transpilePythonToJs = (pythonCode: string) => {
   };
 
   // Extract user code block between lego templates
-  const extractUserCode = (fullCode: string) => {
+  const extractUserCode = (fullCode) => {
     const startMarker = '# === START_BLOCKLY_CODE ===';
     const endMarker = '# === END_BLOCKLY_CODE ===';
     const startIndex = fullCode.indexOf(startMarker);
@@ -334,8 +333,8 @@ const transpilePythonToJs = (pythonCode: string) => {
     const execId = ++activeExecutionId.current;
 
     // Simulation SDK mapping
-    const sleep = (ms: number) => {
-      return new Promise<void>((resolve, reject) => {
+    const sleep = (ms) => {
+      return new Promise((resolve, reject) => {
         setTimeout(() => {
           if (execId !== activeExecutionId.current) {
             reject(new Error('Interrupted'));
@@ -463,7 +462,7 @@ const transpilePythonToJs = (pythonCode: string) => {
       if (reading && reading.type === 'color') {
         return reading.color;
       }
-      const fallback = Object.values(sensorReadingsRef.current).find((r: any) => r.type === 'color') as any;
+      const fallback = Object.values(sensorReadingsRef.current).find((r: any) => r.type === 'color') ;
       return fallback ? fallback.color : -1;
     };
 
@@ -473,7 +472,7 @@ const transpilePythonToJs = (pythonCode: string) => {
       if (reading && reading.type === 'color') {
         return reading.reflection;
       }
-      const fallback = Object.values(sensorReadingsRef.current).find((r: any) => r.type === 'color') as any;
+      const fallback = Object.values(sensorReadingsRef.current).find((r: any) => r.type === 'color') ;
       return fallback ? fallback.reflection : 0;
     };
 
@@ -483,7 +482,7 @@ const transpilePythonToJs = (pythonCode: string) => {
       if (reading && reading.type === 'distance') {
         return Math.round(reading.distance);
       }
-      const fallback = Object.values(sensorReadingsRef.current).find((r: any) => r.type === 'distance') as any;
+      const fallback = Object.values(sensorReadingsRef.current).find((r: any) => r.type === 'distance') ;
       return fallback ? Math.round(fallback.distance) : 200;
     };
 
@@ -493,7 +492,7 @@ const transpilePythonToJs = (pythonCode: string) => {
       if (reading && reading.type === 'force') {
         return reading.force;
       }
-      const fallback = Object.values(sensorReadingsRef.current).find((r: any) => r.type === 'force') as any;
+      const fallback = Object.values(sensorReadingsRef.current).find((r: any) => r.type === 'force') ;
       return fallback ? fallback.force : 0;
     };
 
@@ -699,5 +698,4 @@ const transpilePythonToJs = (pythonCode: string) => {
       }
     }
   };
-return transpilePythonToJs(pythonCode);
-}
+export { transpilePythonToJs };

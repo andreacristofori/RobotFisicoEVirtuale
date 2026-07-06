@@ -868,6 +868,12 @@ pythonGenerator.forBlock['spike_repeat_forever'] = function(block: any, generato
   return `while True:\n${branchCode}`;
 };
 
+pythonGenerator.forBlock['math_change'] = function(block: any, generator: any) {
+  const argument0 = generator.valueToCode(block, 'DELTA', (pythonGenerator as any).ORDER_ADDITIVE) || '0';
+  const varName = generator.getVariableName(block.getFieldValue('VAR'));
+  return varName + ' = (' + varName + ' if isinstance(' + varName + ', (int, float)) else 0) + ' + argument0 + '\n';
+};
+
 const toolbox = {
   "kind": "categoryToolbox",
   "contents": [
@@ -1296,6 +1302,41 @@ const BlocklyEditor = forwardRef<BlocklyEditorRef, BlocklyEditorProps>(
     const blocklyDiv = useRef<HTMLDivElement>(null);
     const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
     const [currentCode, setCurrentCode] = useState("");
+
+    const [promptData, setPromptData] = useState<{
+      message: string;
+      defaultValue: string;
+      callback: (value: string | null) => void;
+    } | null>(null);
+    const [promptValue, setPromptValue] = useState("");
+    const promptInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (promptData) {
+        setPromptValue(promptData.defaultValue);
+        setTimeout(() => {
+          if (promptInputRef.current) {
+            promptInputRef.current.focus();
+            promptInputRef.current.select();
+          }
+        }, 50);
+      }
+    }, [promptData]);
+
+    const handlePromptSubmit = (e?: React.FormEvent) => {
+      if (e) e.preventDefault();
+      if (promptData) {
+        promptData.callback(promptValue);
+        setPromptData(null);
+      }
+    };
+
+    const handlePromptCancel = () => {
+      if (promptData) {
+        promptData.callback(null);
+        setPromptData(null);
+      }
+    };
 
     useEffect(() => {
       if (isVisible && workspaceRef.current) {
@@ -1841,6 +1882,13 @@ runloop.run(main())
             }
         }
       });
+      // Register custom variable prompt dialog
+      if ((Blockly as any).dialog && typeof (Blockly as any).dialog.setPrompt === 'function') {
+        (Blockly as any).dialog.setPrompt((message: string, defaultValue: string, callback: (val: string | null) => void) => {
+          setPromptData({ message, defaultValue, callback });
+        });
+      }
+
       workspaceRef.current = Blockly.inject(blocklyDiv.current, {
         toolbox: toolbox,
         trashcan: true,
@@ -2003,6 +2051,43 @@ runloop.run(main())
           <Minus className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Custom Yellow Variable Prompt Modal */}
+      {promptData && (
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[10000] p-4 pointer-events-auto">
+          <form
+            onSubmit={handlePromptSubmit}
+            className="w-full max-w-sm bg-yellow-400 border-4 border-black p-6 rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black animate-in fade-in zoom-in duration-150"
+          >
+            <h3 className="text-md font-extrabold uppercase tracking-wide mb-3">
+              {promptData.message}
+            </h3>
+            <input
+              ref={promptInputRef}
+              type="text"
+              value={promptValue}
+              onChange={(e) => setPromptValue(e.target.value)}
+              className="w-full bg-white border-3 border-black rounded-xl px-3 py-2 text-neutral-900 font-bold text-base focus:outline-none focus:ring-2 focus:ring-black mb-5 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1)]"
+              placeholder="Nome della variabile..."
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={handlePromptCancel}
+                className="px-4 py-2 border-3 border-black rounded-xl font-bold bg-neutral-100 hover:bg-neutral-200 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] cursor-pointer"
+              >
+                Annulla
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 border-3 border-black rounded-xl font-bold bg-black text-white hover:bg-neutral-800 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] cursor-pointer"
+              >
+                Conferma
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 });

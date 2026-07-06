@@ -1,6 +1,6 @@
 export const transpilePythonToJsWrapper = (pythonCode: string) => {
 const transpilePythonToJs = (pythonCode: string) => {
-    // Strip common leading whitespace from all lines
+    // 1. Rimuove indentazione iniziale comune
     const stripCommonIndent = (codeStr: string): string => {
       const lines = codeStr.split('\n');
       let minIndent = Infinity;
@@ -13,36 +13,140 @@ const transpilePythonToJs = (pythonCode: string) => {
           }
         }
       }
-      if (minIndent === Infinity || minIndent === 0) {
-        return codeStr;
-      }
+      if (minIndent === Infinity || minIndent === 0) return codeStr;
       return lines.map(line => {
-        if (line.trim() === '') return '';
-        return line.substring(Math.min(line.length - line.trimStart().length, minIndent));
+        if (line.trim().length === 0) return '';
+        return line.substring(Math.min(minIndent, line.length - line.trimStart().length));
       }).join('\n');
     };
 
-    const normalizedPython = stripCommonIndent(pythonCode);
-    let lines = normalizedPython.split('\n');
+    const strippedPython = stripCommonIndent(pythonCode);
+
+    // 2. Sostituzioni Espressioni Python Base
+    const translateExpression = (expr: string): string => {
+      let e = expr;
+      
+      e = e.replace(/\bnot\b/g, '!');
+      e = e.replace(/\band\b/g, '&&');
+      e = e.replace(/\bor\b/g, '||');
+      e = e.replace(/\bTrue\b/g, 'true');
+      e = e.replace(/\bFalse\b/g, 'false');
+      e = e.replace(/\bNone\b/g, 'null');
+      
+      e = e.replace(/\bint\(/g, 'py_int(');
+      e = e.replace(/\bfloat\(/g, 'py_float(');
+      e = e.replace(/\bstr\(/g, 'py_str(');
+      e = e.replace(/\blen\(/g, 'py_len(');
+      e = e.replace(/\babs\(/g, 'py_abs(');
+      e = e.replace(/\bround\(/g, 'py_round(');
+      e = e.replace(/\bmin\(/g, 'py_min(');
+      e = e.replace(/\bmax\(/g, 'py_max(');
+      
+      // Standard LEGO Spike sensor calls
+      e = e.replace(/color_sensor\.color\(\s*port\.([a-zA-Z0-9_]+)\s*\)/g, 'getColor("$1")');
+      e = e.replace(/color_sensor\.reflection\(\s*port\.([a-zA-Z0-9_]+)\s*\)/g, 'getReflection("$1")');
+      e = e.replace(/distance_sensor\.distance\(\s*port\.([a-zA-Z0-9_]+)\s*\)/g, 'getDistance("$1")');
+      e = e.replace(/force_sensor\.force\(\s*port\.([a-zA-Z0-9_]+)\s*\)/g, 'getForce("$1")');
+      
+      // _safe_sensor wrapper calls
+      e = e.replace(/_safe_sensor\(color_sensor\.color,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getColor("$1")');
+      e = e.replace(/_safe_sensor\(color_sensor\.reflection,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getReflection("$1")');
+      e = e.replace(/_safe_sensor\(distance_sensor\.distance,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getDistance("$1")');
+      e = e.replace(/_safe_sensor\(force_sensor\.force,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getForce("$1")');
+      e = e.replace(/_safe_sensor\(motion_sensor\.yaw_angle\)/g, 'getYaw()');
+      e = e.replace(/_safe_sensor\(motion_sensor\.pitch_angle\)/g, 'getPitch()');
+      e = e.replace(/_safe_sensor\(motion_sensor\.roll_angle\)/g, 'getRoll()');
+      
+      // Gyro/tilt angles standard calls
+      e = e.replace(/motion_sensor\.tilt_angles\(\)\[0\]/g, '(getYaw() * 10)');
+      e = e.replace(/motion_sensor\.tilt_angles\(\)\[1\]/g, '(getPitch() * 10)');
+      e = e.replace(/motion_sensor\.tilt_angles\(\)\[2\]/g, '(getRoll() * 10)');
+      
+      // Replace Python int and float with safe non-reserved JS parameter names
+      e = e.replace(/\bint\b/g, 'py_int');
+      e = e.replace(/\bfloat\b/g, 'py_float');
+      
+      return e;
+    };
+
+    // 3. Sostituzioni Statements Base
+    const translateStatement = (stmt: string): string => {
+      let s = stmt;
+      
+      // replace sleep/delays (standard and internal)
+      s = s.replace(/await\s+runloop\.sleep_ms\((.*?)\)/g, 'await sleep($1)');
+      s = s.replace(/await\s+custom_sleep\((.*?)\)/g, 'await sleep($1)');
+      
+      // replace drive pairs (standard & simulator-internal)
+      s = s.replace(/await\s+_drive_pair_for_degrees\((.*?),\s*(.*?),\s*(.*?)\)/g, 'await drivePairForDegrees($1, $2, $3)');
+      s = s.replace(/_drive_pair_for_degrees\((.*?),\s*(.*?),\s*(.*?)\)/g, 'drivePairForDegrees($1, $2, $3)');
+      s = s.replace(/await\s+_drive_pair\((.*?),\s*(.*?)\)/g, 'await drivePair($1, $2)');
+      s = s.replace(/_drive_pair\((.*?),\s*(.*?)\)/g, 'drivePair($1, $2)');
+      s = s.replace(/_stop_pair\(\)/g, 'stopPair()');
+      
+      // replace light matrix (standard & simulator-internal)
+      s = s.replace(/light_matrix\.write\((.*?)\)/g, 'writeLightMatrix($1)');
+      s = s.replace(/_write_light_matrix\((.*?)\)/g, 'writeLightMatrix($1)');
+      s = s.replace(/light_matrix\.clear\(\)/g, 'clearLightMatrix()');
+      s = s.replace(/_clear_light_matrix\(\)/g, 'clearLightMatrix()');
+      s = s.replace(/light_matrix\.show_image\(light_matrix\.(.*?)\)/g, 'showImageLightMatrix("$1")');
+      s = s.replace(/_show_image_light_matrix\((.*?)\)/g, 'showImageLightMatrix($1)');
+      
+      // replace sounds (standard & simulator-internal)
+      s = s.replace(/sound\.beep\((.*?),\s*(.*?)\)/g, 'playNote($1, $2)');
+      s = s.replace(/sound\.beep\(\)/g, 'beep()');
+      s = s.replace(/_play_note\((.*?),\s*(.*?)\)/g, 'playNote($1, $2)');
+      s = s.replace(/_beep\(\)/g, 'beep()');
+      
+      // replace motor controllers (standard & simulator-internal)
+      s = s.replace(/await\s+motor\.run_for_degrees\(port\.(.*?),\s*(.*?),\s*(.*?)\)/g, 'await runMotorForDegrees("$1", $2, $3)');
+      s = s.replace(/motor\.run\(port\.(.*?),\s*(.*?)\)/g, 'runMotor("$1", $2)');
+      s = s.replace(/motor\.stop\(port\.(.*?)\)/g, 'stopMotor("$1")');
+      
+      s = s.replace(/_run_motor_for_degrees\((.*?),\s*(.*?),\s*(.*?)\)/g, 'runMotorForDegrees($1, $2, $3)');
+      s = s.replace(/_run_motor\((.*?),\s*(.*?)\)/g, 'runMotor($1, $2)');
+      s = s.replace(/_stop_motor\((.*?)\)/g, 'stopMotor($1)');
+      
+      // replace motion/gyro (standard & simulator-internal)
+      s = s.replace(/motion_sensor\.reset_yaw\((.*?)\)/g, 'resetYaw($1)');
+      s = s.replace(/_reset_yaw\((.*?)\)/g, 'resetYaw($1)');
+      
+      // print statement
+      s = s.replace(/print\((.*?)\)/g, 'print($1)');
+
+      // SAFE ASSIGNMENT CHECK
+      // Match only when there is a valid variable name on the LHS, followed by a single '=' which is NOT part of '==', '!=', '>=', '<='
+      const assignmentMatch = s.match(/^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([^=].*)$/);
+      if (assignmentMatch) {
+        const lhs = assignmentMatch[1].trim();
+        const rhs = assignmentMatch[2].trim();
+        s = `${lhs} = ${translateExpression(rhs)}`;
+      } else {
+        s = translateExpression(s);
+      }
+
+      return s + (s.endsWith('}') || s.endsWith('{') ? '' : ';');
+    };
+
     let jsCode = '';
-    let currentIndent = 0;
-    let blockStack: string[] = [];
     
-    // Extract variables (supporting indented variables and excluding comparisons like ==)
+    // Lo stack tiene traccia dei blocchi aperti
+    const blockStack: { type: string, indent: number }[] = [];
+    
+    // 4. Scansione preliminare delle variabili per dichiarazione
+    const varRegex = /^[ \t]*([a-zA-Z_][a-zA-Z0-9_]*)\s*=[^=]/;
     const declaredVars = new Set<string>();
-    const varRegex = /^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=(?!=)/gm;
-    let match;
-    while ((match = varRegex.exec(normalizedPython)) !== null) {
-      const name = match[1];
-      if (!['global', 'import', 'from', 'pass', 'return', 'if', 'while', 'elif', 'else', 'try', 'except'].includes(name)) {
-        declaredVars.add(name);
+    const lines = strippedPython.split('\n');
+    for (const line of lines) {
+      const match = line.match(varRegex);
+      if (match) {
+        declaredVars.add(match[1]);
       }
     }
-    
-    // Header declarations
-    let declarations = Array.from(declaredVars).map(v => `let ${v} = 0;`).join('\n') + '\n';
+    const declarations = Array.from(declaredVars).map(v => `let ${v} = 0;`).join('\n') + (declaredVars.size > 0 ? '\n' : '');
     jsCode += declarations;
 
+    // 5. Scansione del corpo linea per linea
     for (let i = 0; i < lines.length; i++) {
       const origLine = lines[i];
       const trimmed = origLine.trim();
@@ -51,21 +155,31 @@ const transpilePythonToJs = (pythonCode: string) => {
         continue;
       }
       
-      // Indentation checks
       const indent = origLine.length - origLine.trimStart().length;
-      while (indent < currentIndent) {
-        const isTargetTry = (currentIndent - 4 === indent) && (trimmed.startsWith('except') || trimmed.startsWith('finally'));
-        
-        const blockType = blockStack.pop();
-        if (blockType === 'try' && !isTargetTry) {
-            jsCode += ' '.repeat(Math.max(0, currentIndent - 4)) + '} catch (e) {}\n';
-        } else if (blockType === 'while') {
-            jsCode += ' '.repeat(currentIndent) + 'await sleep(10);\n';
-            jsCode += ' '.repeat(Math.max(0, currentIndent - 4)) + '}\n';
+      
+      // Chiusura blocchi
+      while (blockStack.length > 0) {
+        const topBlock = blockStack[blockStack.length - 1];
+        if (indent <= topBlock.indent) {
+           const blockType = topBlock.type;
+           const blockIndent = topBlock.indent;
+           blockStack.pop();
+           
+           if (blockType === 'try') {
+               if (indent === blockIndent && (trimmed.startsWith('except') || trimmed.startsWith('finally'))) {
+                   jsCode += ' '.repeat(blockIndent) + '}\n';
+               } else {
+                   jsCode += ' '.repeat(blockIndent) + '} catch (e) {}\n';
+               }
+           } else if (blockType === 'while') {
+               jsCode += ' '.repeat(blockIndent + 4) + 'await sleep(10);\n';
+               jsCode += ' '.repeat(blockIndent) + '}\n';
+           } else {
+               jsCode += ' '.repeat(blockIndent) + '}\n';
+           }
         } else {
-            jsCode += ' '.repeat(Math.max(0, currentIndent - 4)) + '}\n';
+           break;
         }
-        currentIndent -= 4;
       }
       
       let translated = trimmed;
@@ -76,115 +190,73 @@ const transpilePythonToJs = (pythonCode: string) => {
         translated = translated.substring(0, hashIndex).trim();
       }
       
-      // Control flows
+      // Control flows JS
       if (translated === 'while True:') {
         translated = 'while (true) {';
-        currentIndent = indent + 4;
-        blockStack.push('while');
+        blockStack.push({ type: 'while', indent: indent });
       } else if ((translated.startsWith('while ') || translated.startsWith('while(')) && translated.endsWith(':')) {
         const cond = translated.startsWith('while(') ? translated.substring(5, translated.length - 1) : translated.substring(6, translated.length - 1);
         translated = `while (${translateExpression(cond.trim())}) {`;
-        currentIndent = indent + 4;
-        blockStack.push('while');
+        blockStack.push({ type: 'while', indent: indent });
       } else if ((translated.startsWith('if ') || translated.startsWith('if(') || translated.startsWith('se ') || translated.startsWith('se(')) && translated.endsWith(':')) {
-        console.log('DEBUG: Processing IF/SE', translated);
         let cond = '';
-        if (translated.startsWith('if(')) {
-          cond = translated.substring(2, translated.length - 1);
-        } else if (translated.startsWith('if ')) {
-          cond = translated.substring(3, translated.length - 1);
-        } else if (translated.startsWith('se(')) {
-          cond = translated.substring(2, translated.length - 1);
-        } else {
-          cond = translated.substring(3, translated.length - 1);
-        }
+        if (translated.startsWith('if(')) cond = translated.substring(2, translated.length - 1);
+        else if (translated.startsWith('if ')) cond = translated.substring(3, translated.length - 1);
+        else if (translated.startsWith('se(')) cond = translated.substring(2, translated.length - 1);
+        else cond = translated.substring(3, translated.length - 1);
         translated = `if (${translateExpression(cond.trim())}) {`;
-        currentIndent = indent + 4;
-        blockStack.push('if');
+        blockStack.push({ type: 'if', indent: indent });
       } else if ((translated.startsWith('elif ') || translated.startsWith('elif(')) && translated.endsWith(':')) {
         const cond = translated.startsWith('elif(') ? translated.substring(4, translated.length - 1) : translated.substring(5, translated.length - 1);
         translated = `else if (${translateExpression(cond.trim())}) {`;
-        currentIndent = indent + 4;
-        blockStack.push('if');
+        blockStack.push({ type: 'if', indent: indent });
       } else if (translated === 'else:') {
         translated = 'else {';
-        currentIndent = indent + 4;
-        blockStack.push('if');
+        blockStack.push({ type: 'if', indent: indent });
       } else if (translated.startsWith('async def ') && translated.endsWith(':')) {
         const funcHeader = translated.substring(10, translated.length - 1);
         translated = `async function ${funcHeader} {`;
-        currentIndent = indent + 4;
-        blockStack.push('def');
+        blockStack.push({ type: 'def', indent: indent });
       } else if (translated.startsWith('def ') && translated.endsWith(':')) {
         const funcHeader = translated.substring(4, translated.length - 1);
         translated = `function ${funcHeader} {`;
-        currentIndent = indent + 4;
-        blockStack.push('def');
+        blockStack.push({ type: 'def', indent: indent });
       } else if (translated.startsWith('for ') && translated.endsWith(':')) {
         const forRangeMatch = translated.match(/^for\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+range\((.*)\)\s*:$/);
         if (forRangeMatch) {
           const varName = forRangeMatch[1];
           const rangeArgsStr = forRangeMatch[2].trim();
           const args = rangeArgsStr.split(',').map(a => a.trim());
-          let start = '0';
-          let stop = '0';
-          let step = '1';
-          if (args.length === 1) {
-            stop = translateExpression(args[0]);
-          } else if (args.length === 2) {
-            start = translateExpression(args[0]);
-            stop = translateExpression(args[1]);
-          } else if (args.length === 3) {
-            start = translateExpression(args[0]);
-            stop = translateExpression(args[1]);
-            step = translateExpression(args[2]);
-          }
+          let start = '0', stop = '0', step = '1';
+          if (args.length === 1) stop = translateExpression(args[0]);
+          else if (args.length === 2) { start = translateExpression(args[0]); stop = translateExpression(args[1]); }
+          else if (args.length === 3) { start = translateExpression(args[0]); stop = translateExpression(args[1]); step = translateExpression(args[2]); }
           const isNegativeStep = step.startsWith('-') || parseInt(step) < 0;
           const cmp = isNegativeStep ? '>' : '<';
           const increment = step === '1' ? `${varName}++` : (step === '-1' ? `${varName}--` : `${varName} += ${step}`);
           translated = `for (let ${varName} = ${start}; ${varName} ${cmp} ${stop}; ${increment}) {`;
-          currentIndent = indent + 4;
-          blockStack.push('for');
         } else {
           const forInMatch = translated.match(/^for\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+(.*)\s*:$/);
           if (forInMatch) {
             const varName = forInMatch[1];
             const iterable = translateExpression(forInMatch[2].trim());
             translated = `for (let ${varName} of ${iterable}) {`;
-            currentIndent = indent + 4;
-            blockStack.push('for');
           }
         }
+        blockStack.push({ type: 'for', indent: indent });
       } else if (translated === 'try:') {
         translated = 'try {';
-        currentIndent = indent + 4;
-        blockStack.push('try');
+        blockStack.push({ type: 'try', indent: indent });
       } else if (translated.startsWith('except') && translated.endsWith(':')) {
         translated = 'catch (e) {';
-        currentIndent = indent + 4;
-        blockStack.push('except');
+        blockStack.push({ type: 'except', indent: indent });
       } else if (translated === 'finally:') {
         translated = 'finally {';
-        currentIndent = indent + 4;
-        blockStack.push('except');
+        blockStack.push({ type: 'finally', indent: indent });
       } else if (translated.startsWith('try: ')) {
         const stmt = translated.substring(5).trim();
         translated = `try { ${translateStatement(stmt)}`;
-        currentIndent = indent + 4;
-        blockStack.push('try');
-      } else if (translated.startsWith('except:')) {
-        const stmt = translated.substring(7).trim();
-        const jsStmt = stmt === 'pass' ? '' : translateStatement(stmt);
-        translated = `catch (e) { ${jsStmt} }`;
-        // One-liner except doesn't change currentIndent, so no push needed
-      } else if (translated.startsWith('except ') && !translated.endsWith(':')) {
-        const colonIndex = translated.indexOf(':');
-        if (colonIndex !== -1) {
-          const stmt = translated.substring(colonIndex + 1).trim();
-          const jsStmt = stmt === 'pass' ? '' : translateStatement(stmt);
-          translated = `catch (e) { ${jsStmt} }`;
-          // One-liner except doesn't change currentIndent, so no push needed
-        }
+        blockStack.push({ type: 'try', indent: indent });
       } else if (translated === 'pass') {
         translated = '// pass';
       } else if (translated.startsWith('global ')) {
@@ -200,105 +272,24 @@ const transpilePythonToJs = (pythonCode: string) => {
       jsCode += ' '.repeat(indent) + translated + (lineComment ? ' ' + lineComment.replace('#', '//') : '') + '\n';
     }
     
-    while (currentIndent > 0) {
-      const blockType = blockStack.pop();
+    // 6. Svuota lo Stack residuo a fine file
+    while (blockStack.length > 0) {
+      const topBlock = blockStack.pop();
+      if (!topBlock) break;
+      const { type: blockType, indent: blockIndent } = topBlock;
+      
       if (blockType === 'try') {
-        jsCode += ' '.repeat(Math.max(0, currentIndent - 4)) + '} catch (e) {}\n';
+        jsCode += ' '.repeat(blockIndent) + '} catch (e) {}\n';
       } else if (blockType === 'while') {
-        jsCode += ' '.repeat(currentIndent) + 'await sleep(10);\n';
-        jsCode += ' '.repeat(Math.max(0, currentIndent - 4)) + '}\n';
+        jsCode += ' '.repeat(blockIndent + 4) + 'await sleep(10);\n';
+        jsCode += ' '.repeat(blockIndent) + '}\n';
       } else {
-        jsCode += ' '.repeat(Math.max(0, currentIndent - 4)) + '}\n';
+        jsCode += ' '.repeat(blockIndent) + '}\n';
       }
-      currentIndent -= 4;
     }
     
     console.log("Transpiled JS code:\n", jsCode);
     return jsCode;
-  };
-
-  const translateStatement = (stmt: string): string => {
-    let s = stmt;
-    
-    // replace sleep/delays
-    s = s.replace(/await\s+runloop\.sleep_ms\((.*?)\)/g, 'await sleep($1)');
-    s = s.replace(/await\s+custom_sleep\((.*?)\)/g, 'await sleep($1)');
-    
-    // replace drive pairs
-    s = s.replace(/_drive_pair\((.*?),\s*(.*?)\)/g, 'drivePair($1, $2)');
-    s = s.replace(/await\s+_drive_pair_for_degrees\((.*?),\s*(.*?),\s*(.*?)\)/g, 'await drivePairForDegrees($1, $2, $3)');
-    s = s.replace(/_stop_pair\(\)/g, 'stopPair()');
-    
-    // replace light matrix
-    s = s.replace(/light_matrix\.write\((.*?)\)/g, 'writeLightMatrix($1)');
-    s = s.replace(/light_matrix\.clear\(\)/g, 'clearLightMatrix()');
-    s = s.replace(/light_matrix\.show_image\(light_matrix\.(.*?)\)/g, 'showImageLightMatrix("$1")');
-    
-    // replace sounds
-    s = s.replace(/sound\.beep\((.*?),\s*(.*?)\)/g, 'playNote($1, $2)');
-    s = s.replace(/sound\.beep\(\)/g, 'beep()');
-    
-    // replace motor controllers
-    s = s.replace(/motor\.run\(port\.(.*?),\s*(.*?)\)/g, 'runMotor("$1", $2)');
-    s = s.replace(/motor\.stop\(port\.(.*?)\)/g, 'stopMotor("$1")');
-    s = s.replace(/await\s+motor\.run_for_degrees\(port\.(.*?),\s*(.*?),\s*(.*?)\)/g, 'await runMotorForDegrees("$1", $2, $3)');
-    
-    // replace motion/gyro
-    s = s.replace(/motion_sensor\.reset_yaw\((.*?)\)/g, 'resetYaw($1)');
-    
-    // replace sensor calls
-    s = s.replace(/_safe_sensor\(color_sensor\.color,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getColor("$1")');
-    s = s.replace(/_safe_sensor\(color_sensor\.reflection,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getReflection("$1")');
-    s = s.replace(/_safe_sensor\(distance_sensor\.distance,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getDistance("$1")');
-    s = s.replace(/_safe_sensor\(force_sensor\.force,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getForce("$1")');
-    
-    // print statement
-    s = s.replace(/print\((.*?)\)/g, 'print($1)');
-
-    // SAFE ASSIGNMENT CHECK
-    // Match only when there is a valid variable name on the LHS, followed by a single '=' which is NOT part of '==', '!=', '>=', '<='
-    const assignmentMatch = s.match(/^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([^=].*)$/);
-    if (assignmentMatch) {
-      const lhs = assignmentMatch[1].trim();
-      const rhs = assignmentMatch[2].trim();
-      s = `${lhs} = ${translateExpression(rhs)}`;
-    } else {
-      s = translateExpression(s);
-    }
-    
-    return s;
-  };
-
-  const translateExpression = (expr: string): string => {
-    let e = expr;
-    e = e.replace(/\bTrue\b/g, 'true');
-    e = e.replace(/\bFalse\b/g, 'false');
-    e = e.replace(/\band\b/g, '&&');
-    e = e.replace(/\bor\b/g, '||');
-    e = e.replace(/\bnot\b/g, '!');
-    
-    e = e.replace(/color_sensor\.color\(\s*port\.([a-zA-Z0-9_]+)\s*\)/g, 'getColor("$1")');
-    e = e.replace(/color_sensor\.reflection\(\s*port\.([a-zA-Z0-9_]+)\s*\)/g, 'getReflection("$1")');
-    e = e.replace(/distance_sensor\.distance\(\s*port\.([a-zA-Z0-9_]+)\s*\)/g, 'getDistance("$1")');
-    e = e.replace(/force_sensor\.force\(\s*port\.([a-zA-Z0-9_]+)\s*\)/g, 'getForce("$1")');
-    
-    e = e.replace(/_safe_sensor\(color_sensor\.color,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getColor("$1")');
-    e = e.replace(/_safe_sensor\(color_sensor\.reflection,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getReflection("$1")');
-    e = e.replace(/_safe_sensor\(distance_sensor\.distance,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getDistance("$1")');
-    e = e.replace(/_safe_sensor\(force_sensor\.force,\s*port\.([a-zA-Z0-9_]+)(?:,\s*[^)]*)?\)/g, 'getForce("$1")');
-    
-    e = e.replace(/motion_sensor\.tilt_angles\(\)\[0\]/g, 'getYaw()');
-    e = e.replace(/motion_sensor\.tilt_angles\(\)\[1\]/g, 'getPitch()');
-    e = e.replace(/motion_sensor\.tilt_angles\(\)\[2\]/g, 'getRoll()');
-    
-    e = e.replace(/len\((.*?)\)/g, 'String($1).length');
-    e = e.replace(/str\((.*?)\)/g, 'String($1)');
-    
-    // Replace Python int and float with safe non-reserved JS parameter names
-    e = e.replace(/\bint\b/g, 'py_int');
-    e = e.replace(/\bfloat\b/g, 'py_float');
-    
-    return e;
   };
 
   // Extract user code block between lego templates
@@ -453,7 +444,7 @@ const transpilePythonToJs = (pythonCode: string) => {
 
     const resetYaw = (angle = 0) => {
       if (execId !== activeExecutionId.current) return;
-      robotRef.current.yawResetAngle = robotRef.current.angle - angle;
+      robotRef.current.yawResetAngle = robotRef.current.angle - (angle / 10);
     };
 
     const getYaw = () => {
@@ -553,7 +544,8 @@ const transpilePythonToJs = (pythonCode: string) => {
         'playNote', 'beep', 'runMotor', 'stopMotor', 'runMotorForDegrees',
         'resetYaw', 'getColor', 'getReflection', 'getDistance', 'getForce',
         'getYaw', 'getPitch', 'getRoll', 'print',
-        'py_int', 'py_float', 'str', 'len', 'abs', 'round', 'min', 'max',
+        'py_int', 'py_float', 'py_str', 'py_len', 'py_abs', 'py_round', 'py_min', 'py_max',
+        'str', 'len', 'abs', 'round', 'min', 'max',
         `try {
           ${jsCode}
         } catch(e) {
@@ -569,7 +561,8 @@ const transpilePythonToJs = (pythonCode: string) => {
         playNote, beep, runMotor, stopMotor, runMotorForDegrees,
         resetYaw, getColor, getReflection, getDistance, getForce,
         getYaw, getPitch, getRoll, print,
-        py_int, py_float, py_str, py_len, py_abs, py_round, py_min, py_max
+        py_int, py_float, py_str, py_len, py_abs, py_round, py_min, py_max,
+        py_str, py_len, py_abs, py_round, py_min, py_max
       );
 
       setConsoleLogs(prev => [...prev, '[Simulatore] Esecuzione completata.']);
@@ -627,12 +620,12 @@ const transpilePythonToJs = (pythonCode: string) => {
       ctx.lineJoin = 'round';
       
       ctx.beginPath();
-      // Round loop track
-      ctx.moveTo(130, 135);
-      ctx.bezierCurveTo(350, 60, 500, 60, 650, 135);
-      ctx.bezierCurveTo(750, 200, 750, 280, 650, 315);
-      ctx.bezierCurveTo(500, 370, 350, 370, 130, 315);
-      ctx.bezierCurveTo(50, 280, 50, 200, 130, 135);
+      // Round loop track - Shifted 17px (approx 5cm) up
+      ctx.moveTo(130, 118);
+      ctx.bezierCurveTo(350, 43, 500, 43, 650, 118);
+      ctx.bezierCurveTo(750, 183, 750, 263, 650, 298);
+      ctx.bezierCurveTo(500, 353, 350, 353, 130, 298);
+      ctx.bezierCurveTo(50, 263, 50, 183, 130, 118);
       ctx.stroke();
 
     } else if (mapType === 'colors') {
