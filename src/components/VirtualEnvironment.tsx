@@ -325,10 +325,7 @@ export default function VirtualEnvironment({
           let finalColor = fields.color !== undefined ? fields.color : obs.color;
           
           if (obs.pushable) {
-            // Moveable objects cannot be gray
-            if (finalColor && isColorGray(finalColor)) {
-              finalColor = obs.color && !isColorGray(obs.color) ? obs.color : '#D97706';
-            }
+            // Moveable objects can be any color
           } else {
             // Walls/muri are always and only dark gray
             finalColor = '#4B5563';
@@ -2141,14 +2138,22 @@ export default function VirtualEnvironment({
               colorID = 7;
               colorName = 'Giallo';
               colorHex = '#EAB308';
-            } else if (hue >= 75 && hue < 170) {
+            } else if (hue >= 75 && hue < 155) {
               colorID = 5;
               colorName = 'Verde';
               colorHex = '#22C55E';
-            } else if (hue >= 170 && hue < 260) {
+            } else if (hue >= 155 && hue < 190) {
+              colorID = 4;
+              colorName = 'Ciano';
+              colorHex = '#06B6D4';
+            } else if (hue >= 190 && hue < 260) {
               colorID = 3;
               colorName = 'Blu';
               colorHex = '#3B82F6';
+            } else if (hue >= 260 && hue < 340) {
+              colorID = 1;
+              colorName = 'Magenta';
+              colorHex = '#EC4899';
             }
           }
 
