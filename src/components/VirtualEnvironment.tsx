@@ -2111,6 +2111,7 @@ export default function VirtualEnvironment({
           const max = Math.max(r, g, b);
           const min = Math.min(r, g, b);
           const chroma = max - min;
+          const isGrayShade = Math.abs(r - g) < 25 && Math.abs(g - b) < 25 && Math.abs(r - b) < 25;
 
           if (max < 45 || (brightness < 65 && chroma < 25)) {
             colorID = 0;
@@ -2120,7 +2121,7 @@ export default function VirtualEnvironment({
             colorID = 10;
             colorName = 'Bianco';
             colorHex = '#FFFFFF';
-          } else if (chroma >= 15) {
+          } else if (!isGrayShade && chroma >= 15) {
             let hue = 0;
             if (max === r) {
               hue = ((g - b) / chroma) % 6;
@@ -2881,7 +2882,7 @@ export default function VirtualEnvironment({
                 <span className="text-[10px] text-neutral-600 font-semibold">Colore:</span>
                 {selectedObstacle.pushable ? (
                   <div className="flex items-center gap-1">
-                    {['#D97706', '#EF4444', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'].map(col => (
+                    {['#000000', '#D97706', '#EF4444', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'].map(col => (
                       <button
                         key={col}
                         onClick={() => updateSelectedObstacle({ color: col })}
