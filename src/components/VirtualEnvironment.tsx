@@ -2374,17 +2374,20 @@ export default function VirtualEnvironment({
 
       // Render Matrix Text/Image on LEGO
       if (rob.matrixText) {
-        const text = String(rob.matrixText).toUpperCase();
+        const text = String(rob.matrixText).toUpperCase().substring(0, 4);
         ctx.fillStyle = '#F87171';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         if (text.length <= 1) {
           ctx.font = 'bold 11px monospace';
-          ctx.fillText(text, 0, 0);
-        } else {
+        } else if (text.length === 2) {
           ctx.font = 'bold 8px monospace';
-          ctx.fillText(text.substring(0, 2), 0, 0);
+        } else if (text.length === 3) {
+          ctx.font = 'bold 6.5px monospace';
+        } else {
+          ctx.font = 'bold 5px monospace';
         }
+        ctx.fillText(text, 0, 0);
         // Reset defaults
         ctx.textAlign = 'left';
         ctx.textBaseline = 'alphabetic';
@@ -2846,9 +2849,15 @@ export default function VirtualEnvironment({
 
             {/* LED Display output */}
             <div className="flex items-center gap-2.5 bg-neutral-800/60 p-2 rounded-lg border border-neutral-600">
-              <div className="w-8 h-8 rounded bg-neutral-800 flex items-center justify-center border border-neutral-600">
+              <div className="w-8 h-8 rounded bg-neutral-800 flex items-center justify-center border border-neutral-600 px-0.5 overflow-hidden">
                 {sensorsDisplay.matrixText ? (
-                  <span className="font-mono font-extrabold text-base text-red-500">{sensorsDisplay.matrixText.substring(0, 2).toUpperCase()}</span>
+                  <span className={`font-mono font-extrabold text-red-500 text-center truncate ${
+                    sensorsDisplay.matrixText.length <= 1 ? 'text-base' :
+                    sensorsDisplay.matrixText.length === 2 ? 'text-sm' :
+                    sensorsDisplay.matrixText.length === 3 ? 'text-xs' : 'text-[10px]'
+                  }`}>
+                    {sensorsDisplay.matrixText.substring(0, 4).toUpperCase()}
+                  </span>
                 ) : sensorsDisplay.matrixImage ? (
                   <span className="w-3 h-3 rounded bg-red-500 animate-pulse inline-block" title={sensorsDisplay.matrixImage}></span>
                 ) : (
