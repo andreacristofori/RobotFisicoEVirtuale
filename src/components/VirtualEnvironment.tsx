@@ -1361,6 +1361,32 @@ export default function VirtualEnvironment({
         }
       };
 
+      const mathMock = {
+        sqrt: (val: any) => Math.sqrt(Number(val)),
+        sin: (val: any) => Math.sin(Number(val)),
+        cos: (val: any) => Math.cos(Number(val)),
+        tan: (val: any) => Math.tan(Number(val)),
+        asin: (val: any) => Math.asin(Number(val)),
+        acos: (val: any) => Math.acos(Number(val)),
+        atan: (val: any) => Math.atan(Number(val)),
+        sinh: (val: any) => Math.sinh(Number(val)),
+        cosh: (val: any) => Math.cosh(Number(val)),
+        tanh: (val: any) => Math.tanh(Number(val)),
+        log: (val: any, base?: any) => base !== undefined ? Math.log(Number(val)) / Math.log(Number(base)) : Math.log(Number(val)),
+        log10: (val: any) => Math.log10(Number(val)),
+        exp: (val: any) => Math.exp(Number(val)),
+        pow: (val: any, p: any) => Math.pow(Number(val), Number(p)),
+        ceil: (val: any) => Math.ceil(Number(val)),
+        floor: (val: any) => Math.floor(Number(val)),
+        fabs: (val: any) => Math.abs(Number(val)),
+        degrees: (val: any) => Number(val) * 180 / Math.PI,
+        radians: (val: any) => Number(val) * Math.PI / 180,
+        pi: Math.PI,
+        PI: Math.PI,
+        e: Math.E,
+        E: Math.E,
+      };
+
       const buttonMock = {
         pressed: () => false,
         LEFT: 'LEFT',
@@ -1381,7 +1407,7 @@ export default function VirtualEnvironment({
         'getYaw', 'getPitch', 'getRoll', 'print',
         'py_int', 'py_float', 'py_str', 'py_len', 'py_abs', 'py_round', 'py_min', 'py_max',
         'str', 'len', 'abs', 'round', 'min', 'max',
-        'button', 'hasattr', 'random', 'randint',
+        'button', 'hasattr', 'random', 'randint', 'math',
         `try {
           ${jsCode}
         } catch(e) {
@@ -1399,7 +1425,7 @@ export default function VirtualEnvironment({
         getYaw, getPitch, getRoll, print,
         py_int, py_float, py_str, py_len, py_abs, py_round, py_min, py_max,
         py_str, py_len, py_abs, py_round, py_min, py_max,
-        buttonMock, hasattrMock, randomMock, py_randint
+        buttonMock, hasattrMock, randomMock, py_randint, mathMock
       );
 
       setConsoleLogs(prev => [...prev, '[Simulatore] Esecuzione completata.']);
