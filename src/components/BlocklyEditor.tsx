@@ -654,12 +654,12 @@ pythonGenerator.forBlock['spike_motor_run_for'] = function(block: any, generator
 
 pythonGenerator.forBlock['spike_light_matrix_write'] = function(block: any, generator: any) {
   const text = generator.valueToCode(block, 'TEXT', generator.ORDER_NONE) || '""';
-  return `light_matrix.write(${text})\nawait runloop.sleep_ms(len(str(${text})) * 400 + 500)\n`;
+  return `light_matrix.write(${text})\nawait runloop.sleep_ms(50)\n`;
 };
 
 pythonGenerator.forBlock['spike_light_matrix_write_number'] = function(block: any, generator: any) {
   const num = generator.valueToCode(block, 'NUMBER', generator.ORDER_NONE) || '0';
-  return `light_matrix.write(str(${num}))\nawait runloop.sleep_ms(len(str(${num})) * 400 + 500)\n`;
+  return `light_matrix.write(str(${num}))\nawait runloop.sleep_ms(50)\n`;
 };
 
 pythonGenerator.forBlock['spike_sound_beep'] = function(block: any, generator: any) {
