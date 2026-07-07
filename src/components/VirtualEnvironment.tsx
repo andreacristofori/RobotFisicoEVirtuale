@@ -2373,12 +2373,21 @@ export default function VirtualEnvironment({
       ctx.fillRect(-12, -12, 24, 24);
 
       // Render Matrix Text/Image on LEGO
-      ctx.fillStyle = '#EF4444'; // Red LEDs
       if (rob.matrixText) {
-        // Draw active LED representation (middle LED glowing or simply text indicator)
-        ctx.font = '9px monospace';
+        const text = String(rob.matrixText).toUpperCase();
         ctx.fillStyle = '#F87171';
-        ctx.fillText(rob.matrixText.substring(0, 1).toUpperCase(), -4, 4);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (text.length <= 1) {
+          ctx.font = 'bold 11px monospace';
+          ctx.fillText(text, 0, 0);
+        } else {
+          ctx.font = 'bold 8px monospace';
+          ctx.fillText(text.substring(0, 2), 0, 0);
+        }
+        // Reset defaults
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
       } else if (rob.matrixImage) {
         // Simple pixel representations of image icons
         if (rob.matrixImage.includes('HAPPY') || rob.matrixImage.includes('SMILE')) {
@@ -2839,7 +2848,7 @@ export default function VirtualEnvironment({
             <div className="flex items-center gap-2.5 bg-neutral-800/60 p-2 rounded-lg border border-neutral-600">
               <div className="w-8 h-8 rounded bg-neutral-800 flex items-center justify-center border border-neutral-600">
                 {sensorsDisplay.matrixText ? (
-                  <span className="font-mono font-extrabold text-base text-red-500">{sensorsDisplay.matrixText.substring(0, 1).toUpperCase()}</span>
+                  <span className="font-mono font-extrabold text-base text-red-500">{sensorsDisplay.matrixText.substring(0, 2).toUpperCase()}</span>
                 ) : sensorsDisplay.matrixImage ? (
                   <span className="w-3 h-3 rounded bg-red-500 animate-pulse inline-block" title={sensorsDisplay.matrixImage}></span>
                 ) : (
