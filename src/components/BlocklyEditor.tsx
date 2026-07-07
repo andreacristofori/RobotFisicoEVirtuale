@@ -160,7 +160,7 @@ Blockly.defineBlocksWithJsonArray([
   },
   {
     "type": "spike_color_sensor",
-    "message0": "Sensore di colore sulla porta %1",
+    "message0": "Colore letto sulla porta %1",
     "args0": [
       {
         "type": "field_dropdown",
@@ -178,7 +178,7 @@ Blockly.defineBlocksWithJsonArray([
   },
   {
     "type": "spike_distance_sensor",
-    "message0": "Sensore di Distanza sulla porta %1",
+    "message0": "Distanza letta sulla porta %1",
     "args0": [
       {
         "type": "field_dropdown",
@@ -196,7 +196,7 @@ Blockly.defineBlocksWithJsonArray([
   },
   {
     "type": "spike_force_sensor",
-    "message0": "Sensore di Tocco/Forza sulla porta %1",
+    "message0": "Tocco/Forza sulla porta %1",
     "args0": [
       {
         "type": "field_dropdown",
@@ -505,7 +505,7 @@ Blockly.defineBlocksWithJsonArray([
   },
   {
     "type": "spike_color_sensor_reflection",
-    "message0": "Riflessione luce sensore colore sulla porta %1",
+    "message0": "Percentuale luce riflessa sulla porta %1",
     "args0": [
       {
         "type": "field_dropdown",
