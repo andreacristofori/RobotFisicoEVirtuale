@@ -9,6 +9,17 @@ import { Plus, Minus, Trash2 } from 'lucide-react';
 
 Blockly.setLocale(It as any);
 
+// Register spike_repeat_forever as a recognized loop type in Blockly
+try {
+  if ((Blockly as any).Constants && (Blockly as any).Constants.Loops && (Blockly as any).Constants.Loops.LOOP_TYPES) {
+    if (!(Blockly as any).Constants.Loops.LOOP_TYPES.includes('spike_repeat_forever')) {
+      (Blockly as any).Constants.Loops.LOOP_TYPES.push('spike_repeat_forever');
+    }
+  }
+} catch (e) {
+  console.error("Error setting up loop types", e);
+}
+
 // Define custom blocks
 Blockly.defineBlocksWithJsonArray([
   {
@@ -866,6 +877,17 @@ pythonGenerator.forBlock['spike_repeat_forever'] = function(block: any, generato
     branchCode = '    pass\n';
   }
   return `while True:\n${branchCode}`;
+};
+
+pythonGenerator.forBlock['controls_flow_statements'] = function(block: any, generator: any) {
+  const flow = block.getFieldValue('FLOW');
+  switch (flow) {
+    case 'BREAK':
+      return 'break\n';
+    case 'CONTINUE':
+      return 'continue\n';
+  }
+  return '';
 };
 
 pythonGenerator.forBlock['math_change'] = function(block: any, generator: any) {
