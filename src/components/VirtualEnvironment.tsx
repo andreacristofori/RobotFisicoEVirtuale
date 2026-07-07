@@ -1345,6 +1345,22 @@ export default function VirtualEnvironment({
         return Math.max(...args.map(Number));
       };
 
+      const py_randint = (from: any, to: any) => {
+        const min = Math.ceil(Number(from));
+        const max = Math.floor(Number(to));
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      };
+
+      const randomMock = {
+        randint: py_randint,
+        random: () => Math.random(),
+        uniform: (from: any, to: any) => Math.random() * (Number(to) - Number(from)) + Number(from),
+        choice: (seq: any) => {
+          if (!seq || seq.length === 0) return null;
+          return seq[Math.floor(Math.random() * seq.length)];
+        }
+      };
+
       const buttonMock = {
         pressed: () => false,
         LEFT: 'LEFT',
@@ -1365,7 +1381,7 @@ export default function VirtualEnvironment({
         'getYaw', 'getPitch', 'getRoll', 'print',
         'py_int', 'py_float', 'py_str', 'py_len', 'py_abs', 'py_round', 'py_min', 'py_max',
         'str', 'len', 'abs', 'round', 'min', 'max',
-        'button', 'hasattr',
+        'button', 'hasattr', 'random', 'randint',
         `try {
           ${jsCode}
         } catch(e) {
@@ -1383,7 +1399,7 @@ export default function VirtualEnvironment({
         getYaw, getPitch, getRoll, print,
         py_int, py_float, py_str, py_len, py_abs, py_round, py_min, py_max,
         py_str, py_len, py_abs, py_round, py_min, py_max,
-        buttonMock, hasattrMock
+        buttonMock, hasattrMock, randomMock, py_randint
       );
 
       setConsoleLogs(prev => [...prev, '[Simulatore] Esecuzione completata.']);
