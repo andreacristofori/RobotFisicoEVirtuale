@@ -2441,8 +2441,9 @@ export default function VirtualEnvironment({
         ctx.strokeStyle = '#FF3333'; // Vibrant high-contrast red
         ctx.lineWidth = 1.8;
         
-        // Simple pixel representations of image icons
-        if (rob.matrixImage.includes('HAPPY') || rob.matrixImage.includes('SMILE')) {
+        const imgName = String(rob.matrixImage).toUpperCase();
+
+        if (imgName.includes('HAPPY') || imgName.includes('SMILE')) {
           ctx.beginPath();
           ctx.arc(-5, -4, 2, 0, Math.PI * 2);
           ctx.arc(5, -4, 2, 0, Math.PI * 2);
@@ -2450,23 +2451,78 @@ export default function VirtualEnvironment({
           ctx.beginPath();
           ctx.arc(0, 1, 4.5, 0, Math.PI);
           ctx.stroke();
-        } else if (rob.matrixImage.includes('HEART')) {
+        } else if (imgName.includes('SAD')) {
+          ctx.beginPath();
+          ctx.arc(-5, -4, 2, 0, Math.PI * 2);
+          ctx.arc(5, -4, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(0, 6, 4, Math.PI * 1.2, Math.PI * 1.8);
+          ctx.stroke();
+        } else if (imgName.includes('ANGRY')) {
+          // Eyes
+          ctx.beginPath();
+          ctx.arc(-4, -1, 1.8, 0, Math.PI * 2);
+          ctx.arc(4, -1, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+          // Angry Eyebrows
+          ctx.beginPath();
+          ctx.moveTo(-6, -5); ctx.lineTo(-1, -2);
+          ctx.moveTo(6, -5); ctx.lineTo(1, -2);
+          ctx.stroke();
+          // Mouth
+          ctx.beginPath();
+          ctx.moveTo(-4, 4); ctx.lineTo(4, 4);
+          ctx.stroke();
+        } else if (imgName.includes('SURPRISED')) {
+          ctx.beginPath();
+          ctx.arc(-5, -3, 1.8, 0, Math.PI * 2);
+          ctx.arc(5, -3, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(0, 4, 2.5, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (imgName.includes('HEART')) {
           ctx.fillRect(-6, -6, 5, 5);
           ctx.fillRect(1, -6, 5, 5);
           ctx.fillRect(-6, -1, 12, 5);
           ctx.fillRect(-3, 4, 6, 3);
-        } else if (rob.matrixImage.includes('NO')) {
+        } else if (imgName.includes('NO')) {
           ctx.strokeStyle = '#FF3333';
           ctx.lineWidth = 2.2;
           ctx.beginPath();
           ctx.moveTo(-6, -6); ctx.lineTo(6, 6);
           ctx.moveTo(6, -6); ctx.lineTo(-6, 6);
           ctx.stroke();
-        } else if (rob.matrixImage.includes('YES')) {
+        } else if (imgName.includes('YES')) {
           ctx.strokeStyle = '#22C55E';
           ctx.lineWidth = 2.5;
           ctx.beginPath();
           ctx.moveTo(-6, 0); ctx.lineTo(-2, 5); ctx.lineTo(6, -5);
+          ctx.stroke();
+        } else if (imgName.includes('ARROW_N') || imgName.includes('ARROW_NORTH') || imgName.includes('NORD')) {
+          ctx.beginPath();
+          ctx.moveTo(0, -8); ctx.lineTo(-5, -3);
+          ctx.moveTo(0, -8); ctx.lineTo(5, -3);
+          ctx.moveTo(0, -8); ctx.lineTo(0, 8);
+          ctx.stroke();
+        } else if (imgName.includes('ARROW_S') || imgName.includes('ARROW_SOUTH') || imgName.includes('SUD')) {
+          ctx.beginPath();
+          ctx.moveTo(0, 8); ctx.lineTo(-5, 3);
+          ctx.moveTo(0, 8); ctx.lineTo(5, 3);
+          ctx.moveTo(0, 8); ctx.lineTo(0, -8);
+          ctx.stroke();
+        } else if (imgName.includes('ARROW_E') || imgName.includes('ARROW_EAST') || imgName.includes('EST')) {
+          ctx.beginPath();
+          ctx.moveTo(8, 0); ctx.lineTo(3, -5);
+          ctx.moveTo(8, 0); ctx.lineTo(3, 5);
+          ctx.moveTo(8, 0); ctx.lineTo(-8, 0);
+          ctx.stroke();
+        } else if (imgName.includes('ARROW_W') || imgName.includes('ARROW_WEST') || imgName.includes('OVEST')) {
+          ctx.beginPath();
+          ctx.moveTo(-8, 0); ctx.lineTo(-3, -5);
+          ctx.moveTo(-8, 0); ctx.lineTo(-3, 5);
+          ctx.moveTo(-8, 0); ctx.lineTo(8, 0);
           ctx.stroke();
         } else {
           // generic single pixel
