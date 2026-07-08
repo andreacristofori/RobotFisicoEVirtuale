@@ -1347,10 +1347,10 @@ export default function VirtualEnvironment({
       const p = String(port).toUpperCase();
       const reading = sensorReadingsRef.current[p];
       if (reading && reading.type === 'force') {
-        return reading.force;
+        return reading.force > 0 ? 1 : 0;
       }
       const fallback = Object.values(sensorReadingsRef.current).find((r: any) => r.type === 'force') as any;
-      return fallback ? fallback.force : 0;
+      return fallback ? (fallback.force > 0 ? 1 : 0) : 0;
     };
 
     const print = (text: any) => {
@@ -1446,6 +1446,37 @@ export default function VirtualEnvironment({
         left: { is_pressed: () => false },
         right: { is_pressed: () => false },
       };
+      
+      const lightMatrixMock = {
+        HAPPY: 'IMAGE_HAPPY',
+        IMAGE_HAPPY: 'IMAGE_HAPPY',
+        HEART: 'IMAGE_HEART',
+        IMAGE_HEART: 'IMAGE_HEART',
+        YES: 'IMAGE_YES',
+        IMAGE_YES: 'IMAGE_YES',
+        NO: 'IMAGE_NO',
+        IMAGE_NO: 'IMAGE_NO',
+        SMILE: 'IMAGE_SMILE',
+        IMAGE_SMILE: 'IMAGE_SMILE',
+        SAD: 'IMAGE_SAD',
+        IMAGE_SAD: 'IMAGE_SAD',
+        ANGRY: 'IMAGE_ANGRY',
+        IMAGE_ANGRY: 'IMAGE_ANGRY',
+        SURPRISED: 'IMAGE_SURPRISED',
+        IMAGE_SURPRISED: 'IMAGE_SURPRISED',
+        ARROW_N: 'IMAGE_ARROW_N',
+        IMAGE_ARROW_N: 'IMAGE_ARROW_N',
+        ARROW_S: 'IMAGE_ARROW_S',
+        IMAGE_ARROW_S: 'IMAGE_ARROW_S',
+        ARROW_E: 'IMAGE_ARROW_E',
+        IMAGE_ARROW_E: 'IMAGE_ARROW_E',
+        ARROW_W: 'IMAGE_ARROW_W',
+        IMAGE_ARROW_W: 'IMAGE_ARROW_W',
+        write: (text: any) => writeLightMatrix(text),
+        clear: () => clearLightMatrix(),
+        show_image: (img: any) => showImageLightMatrix(img)
+      };
+
       const hasattrMock = (obj: any, prop: string) => obj && prop in obj;
 
       const runnerFn = new AsyncFunction(
@@ -1456,7 +1487,7 @@ export default function VirtualEnvironment({
         'getYaw', 'getPitch', 'getRoll', 'print',
         'py_int', 'py_float', 'py_str', 'py_len', 'py_abs', 'py_round', 'py_min', 'py_max',
         'str', 'len', 'abs', 'round', 'min', 'max',
-        'button', 'hasattr', 'random', 'randint', 'math',
+        'button', 'light_matrix', 'hasattr', 'random', 'randint', 'math',
         `try {
           ${jsCode}
         } catch(e) {
@@ -1474,7 +1505,7 @@ export default function VirtualEnvironment({
         getYaw, getPitch, getRoll, print,
         py_int, py_float, py_str, py_len, py_abs, py_round, py_min, py_max,
         py_str, py_len, py_abs, py_round, py_min, py_max,
-        buttonMock, hasattrMock, randomMock, py_randint, mathMock
+        buttonMock, lightMatrixMock, hasattrMock, randomMock, py_randint, mathMock
       );
 
       setConsoleLogs(prev => [...prev, '[Simulatore] Esecuzione completata.']);
@@ -2460,13 +2491,13 @@ export default function VirtualEnvironment({
       ctx.fill();
 
       // Draw 5x5 LED matrix inside the center cover
-      ctx.fillStyle = '#374151';
+      ctx.fillStyle = '#000000';
       ctx.fillRect(-12, -12, 24, 24);
 
       // Render Matrix Text/Image on LEGO
       if (rob.matrixText) {
         const text = String(rob.matrixText).toUpperCase().substring(0, 4);
-        ctx.fillStyle = '#F87171';
+        ctx.fillStyle = '#FF2222';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         if (text.length <= 1) {
@@ -2484,9 +2515,9 @@ export default function VirtualEnvironment({
         ctx.textBaseline = 'alphabetic';
       } else if (rob.matrixImage) {
         // High contrast styling for matrix image icons against dark gray background (#374151)
-        ctx.fillStyle = '#FF3333'; // Vibrant high-contrast red
-        ctx.strokeStyle = '#FF3333'; // Vibrant high-contrast red
-        ctx.lineWidth = 1.8;
+        ctx.fillStyle = '#FF2222'; // Vibrant high-contrast red
+        ctx.strokeStyle = '#FF2222'; // Vibrant high-contrast red
+        ctx.lineWidth = 2.4;
         
         const imgName = String(rob.matrixImage).toUpperCase();
 
@@ -2845,6 +2876,15 @@ export default function VirtualEnvironment({
             title={isFullscreen ? "Esci da Schermo Intero (Esc)" : "Schermo Intero"}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg border border-neutral-550 bg-red-600 text-white hover:bg-red-700 transition-colors cursor-pointer"
+            title="Chiudi Simulatore"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
