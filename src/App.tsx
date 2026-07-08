@@ -411,8 +411,9 @@ except Exception as root_e:
 `;
 
       await sendPasteCode(menuCode);
-      setLogs(prev => prev + "Fatto! ✅\n");
-      setLogs(prev => prev + "\n[Menu caricato con successo! Usa i tasti Sinistra/Destra del robot per scegliere il programma, premi Centrale per avviarlo!]\n");
+      await new Promise(r => setTimeout(r, 200));
+      setLogs('');
+      setLogs(prev => prev + "[Menu caricato con successo! Usa i tasti Sinistra/Destra del robot per scegliere il programma, premi Centrale per avviarlo!]\n");
     } catch (err: any) {
       console.error(err);
       setLogs(prev => prev + `Errore nel caricamento: ${err.message}\n`);
@@ -792,6 +793,12 @@ except Exception as root_e:
       
       // Execute (Ctrl+D)
       await writer.write(encoder.encode('\x04'));
+      
+      await new Promise(r => setTimeout(r, 200));
+      setLogs('');
+      if (waitForButton) {
+        setLogs(prev => prev + "[Attesa avvio: Premi il tasto CENTRALE (o Sinistro/Destro) sul robot per avviare il codice. In seguito, premi il tasto Centrale per interrompere!]\n");
+      }
     } catch (err: any) {
       console.error(err);
       setLogs(prev => prev + `Errore di esecuzione: ${err.message}\n`);
@@ -1019,7 +1026,11 @@ except: pass
                   ref={terminalRef}
                   className="flex-1 p-4 overflow-y-auto font-mono text-xs sm:text-sm text-neutral-300 whitespace-pre-wrap break-all"
                 >
-                  {logs || <span className="text-neutral-600 italic">In attesa di connessione...</span>}
+                  {logs || (
+                    <span className="text-neutral-600 italic">
+                      {isConnected ? "Nessun output registrato" : "In attesa di connessione..."}
+                    </span>
+                  )}
                 </div>
               </section>
             </div>
