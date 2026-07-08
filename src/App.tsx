@@ -993,6 +993,7 @@ except: pass
             wheelDiameter={wheelDiameter}
             wheelDistance={wheelDistance}
             maxMotorSpeed={maxMotorSpeed}
+            isVirtualActive={isVirtualActive}
           />
         </div>
 

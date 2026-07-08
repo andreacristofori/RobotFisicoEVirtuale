@@ -10,6 +10,7 @@ interface VirtualEnvironmentProps {
   wheelDiameter: number;
   wheelDistance: number;
   maxMotorSpeed: number;
+  isVirtualActive?: boolean;
 }
 
 interface Obstacle {
@@ -34,6 +35,7 @@ export default function VirtualEnvironment({
   wheelDiameter,
   wheelDistance,
   maxMotorSpeed,
+  isVirtualActive,
 }: VirtualEnvironmentProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const offscreenCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -2434,6 +2436,11 @@ export default function VirtualEnvironment({
         ctx.textAlign = 'left';
         ctx.textBaseline = 'alphabetic';
       } else if (rob.matrixImage) {
+        // High contrast styling for matrix image icons against dark gray background (#374151)
+        ctx.fillStyle = '#FF3333'; // Vibrant high-contrast red
+        ctx.strokeStyle = '#FF3333'; // Vibrant high-contrast red
+        ctx.lineWidth = 1.8;
+        
         // Simple pixel representations of image icons
         if (rob.matrixImage.includes('HAPPY') || rob.matrixImage.includes('SMILE')) {
           ctx.beginPath();
@@ -2441,7 +2448,7 @@ export default function VirtualEnvironment({
           ctx.arc(5, -4, 2, 0, Math.PI * 2);
           ctx.fill();
           ctx.beginPath();
-          ctx.arc(0, 2, 4, 0, Math.PI);
+          ctx.arc(0, 1, 4.5, 0, Math.PI);
           ctx.stroke();
         } else if (rob.matrixImage.includes('HEART')) {
           ctx.fillRect(-6, -6, 5, 5);
@@ -2449,8 +2456,8 @@ export default function VirtualEnvironment({
           ctx.fillRect(-6, -1, 12, 5);
           ctx.fillRect(-3, 4, 6, 3);
         } else if (rob.matrixImage.includes('NO')) {
-          ctx.strokeStyle = '#EF4444';
-          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#FF3333';
+          ctx.lineWidth = 2.2;
           ctx.beginPath();
           ctx.moveTo(-6, -6); ctx.lineTo(6, 6);
           ctx.moveTo(6, -6); ctx.lineTo(-6, 6);
@@ -2464,7 +2471,7 @@ export default function VirtualEnvironment({
         } else {
           // generic single pixel
           ctx.beginPath();
-          ctx.arc(0, 0, 3, 0, Math.PI * 2);
+          ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -2652,6 +2659,12 @@ export default function VirtualEnvironment({
     setIsPlaying(false);
     resetRobot(true);
   };
+
+  useEffect(() => {
+    if (isVirtualActive) {
+      handleReset();
+    }
+  }, [isVirtualActive]);
 
   const selectedObstacle = obstacles.find(o => o.id === selectedObstacleId);
 
