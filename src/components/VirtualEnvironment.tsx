@@ -813,11 +813,56 @@ export default function VirtualEnvironment({
 
     const strippedPython = stripCommonIndent(pythonCode);
 
+    const translateNot = (str: string): string => {
+      let result = '';
+      let i = 0;
+      while (i < str.length) {
+        const remainingFromI = str.substring(i);
+        const matchNot = /^not\b/.test(remainingFromI);
+        
+        if (matchNot && (i === 0 || /\W/.test(str[i - 1]))) {
+          let opStart = i + 3;
+          while (opStart < str.length && /\s/.test(str[opStart])) {
+            opStart++;
+          }
+          
+          let parenDepth = 0;
+          let opEnd = opStart;
+          while (opEnd < str.length) {
+            const char = str[opEnd];
+            if (char === '(') {
+              parenDepth++;
+            } else if (char === ')') {
+              if (parenDepth === 0) {
+                break;
+              }
+              parenDepth--;
+            } else if (parenDepth === 0) {
+              const remaining = str.substring(opEnd);
+              if (/^(and\b|or\b)/.test(remaining)) {
+                break;
+              }
+            }
+            opEnd++;
+          }
+          
+          const operand = str.substring(opStart, opEnd);
+          const translatedOperand = translateNot(operand);
+          result += `!(${translatedOperand})`;
+          i = opEnd;
+        } else {
+          result += str[i];
+          i++;
+        }
+      }
+      return result;
+    };
+
     // 2. Sostituzioni Espressioni Python Base
     const translateExpression = (expr: string): string => {
       let e = expr;
       
-      e = e.replace(/\bnot\b/g, '!');
+      e = translateNot(e);
       e = e.replace(/\band\b/g, '&&');
       e = e.replace(/\bor\b/g, '||');
       e = e.replace(/\bTrue\b/g, 'true');
