@@ -839,7 +839,9 @@ export default function VirtualEnvironment({
               parenDepth--;
             } else if (parenDepth === 0) {
               const remaining = str.substring(opEnd);
-              if (/^(and\b|or\b)/.test(remaining)) {
+              const prevChar = opEnd > 0 ? str[opEnd - 1] : '';
+              const isPrevWordChar = /[a-zA-Z0-9_]/.test(prevChar);
+              if (!isPrevWordChar && /^(and\b|or\b)/.test(remaining)) {
                 break;
               }
             }
