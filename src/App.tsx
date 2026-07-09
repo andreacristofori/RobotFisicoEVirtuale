@@ -80,9 +80,9 @@ export default function App() {
       }
     }
     return [
-      { id: 1, port: '', isTraction: false, isInverted: false },
-      { id: 2, port: '', isTraction: false, isInverted: false },
-      { id: 3, port: '', isTraction: false, isInverted: false },
+      { id: 1, port: 'C', isTraction: true, isInverted: true },
+      { id: 2, port: 'D', isTraction: true, isInverted: false },
+      { id: 3, port: 'E', isTraction: false, isInverted: false },
       { id: 4, port: '', isTraction: false, isInverted: false },
     ];
   });
@@ -97,9 +97,9 @@ export default function App() {
       }
     }
     return [
-      { id: 1, port: '', type: '', direction: 'down' },
-      { id: 2, port: '', type: '', direction: 'down' },
-      { id: 3, port: '', type: '', direction: 'down' },
+      { id: 1, port: 'A', type: 'force', direction: 'down' },
+      { id: 2, port: 'B', type: 'color', direction: 'forward' },
+      { id: 3, port: 'F', type: 'distance', direction: 'down' },
       { id: 4, port: '', type: '', direction: 'down' },
     ];
   });
@@ -122,22 +122,26 @@ export default function App() {
   const handleMaxMotorSpeedChange = (val: number) => {
     setMaxMotorSpeed(val);
     localStorage.setItem('spike_max_motor_speed', val.toString());
+    localStorage.setItem(`spike_slot_${currentSlot}_max_motor_speed`, val.toString());
   };
 
   const handleWheelDiameterChange = (val: number) => {
     setWheelDiameter(val);
     localStorage.setItem('spike_wheel_diameter', val.toString());
+    localStorage.setItem(`spike_slot_${currentSlot}_wheel_diameter`, val.toString());
   };
 
   const handleWheelDistanceChange = (val: number) => {
     setWheelDistance(val);
     localStorage.setItem('spike_wheel_distance', val.toString());
+    localStorage.setItem(`spike_slot_${currentSlot}_wheel_distance`, val.toString());
   };
 
   const handleMotorChange = (id: number, field: keyof MotorConfig, value: any) => {
     setMotors(prev => {
       const updated = prev.map(m => m.id === id ? { ...m, [field]: value } : m);
       localStorage.setItem('spike_motors', JSON.stringify(updated));
+      localStorage.setItem(`spike_slot_${currentSlot}_motors`, JSON.stringify(updated));
       return updated;
     });
   };
@@ -146,8 +150,42 @@ export default function App() {
     setSensors(prev => {
       const updated = prev.map(s => s.id === id ? { ...s, [field]: value } : s);
       localStorage.setItem('spike_sensors', JSON.stringify(updated));
+      localStorage.setItem(`spike_slot_${currentSlot}_sensors`, JSON.stringify(updated));
       return updated;
     });
+  };
+
+  const resetToDefaultSetup = () => {
+    const defaultMotors = [
+      { id: 1, port: 'C', isTraction: true, isInverted: true },
+      { id: 2, port: 'D', isTraction: true, isInverted: false },
+      { id: 3, port: 'E', isTraction: false, isInverted: false },
+      { id: 4, port: '', isTraction: false, isInverted: false },
+    ];
+    const defaultSensors = [
+      { id: 1, port: 'A', type: 'force', direction: 'down' },
+      { id: 2, port: 'B', type: 'color', direction: 'forward' },
+      { id: 3, port: 'F', type: 'distance', direction: 'down' },
+      { id: 4, port: '', type: '', direction: 'down' },
+    ];
+    setMotors(defaultMotors);
+    setSensors(defaultSensors);
+    setWheelDiameter(5.6);
+    setWheelDistance(11.5);
+    setMaxMotorSpeed(100);
+
+    localStorage.setItem('spike_motors', JSON.stringify(defaultMotors));
+    localStorage.setItem('spike_sensors', JSON.stringify(defaultSensors));
+    localStorage.setItem('spike_wheel_diameter', '5.6');
+    localStorage.setItem('spike_wheel_distance', '11.5');
+    localStorage.setItem('spike_max_motor_speed', '100');
+
+    // Also update current slot specifically
+    localStorage.setItem(`spike_slot_${currentSlot}_motors`, JSON.stringify(defaultMotors));
+    localStorage.setItem(`spike_slot_${currentSlot}_sensors`, JSON.stringify(defaultSensors));
+    localStorage.setItem(`spike_slot_${currentSlot}_wheel_diameter`, '5.6');
+    localStorage.setItem(`spike_slot_${currentSlot}_wheel_distance`, '11.5');
+    localStorage.setItem(`spike_slot_${currentSlot}_max_motor_speed`, '100');
   };
 
   const handleBlocklyCodeChange = useCallback((code: string) => {
@@ -164,6 +202,11 @@ export default function App() {
     for (let i = 0; i < TOTAL_SLOTS; i++) {
       localStorage.removeItem(`spike_slot_${i}_workspace`);
       localStorage.removeItem(`spike_slot_${i}_python`);
+      localStorage.removeItem(`spike_slot_${i}_motors`);
+      localStorage.removeItem(`spike_slot_${i}_sensors`);
+      localStorage.removeItem(`spike_slot_${i}_wheel_diameter`);
+      localStorage.removeItem(`spike_slot_${i}_wheel_distance`);
+      localStorage.removeItem(`spike_slot_${i}_max_motor_speed`);
     }
     localStorage.setItem('spike_current_slot', '0');
     setCurrentSlot(0);
@@ -189,11 +232,82 @@ export default function App() {
         setCustomCode('');
         setBlocklyCode('');
     }
+
+    // Load slot-specific robot configuration
+    const savedMotors = localStorage.getItem(`spike_slot_${slot}_motors`);
+    if (savedMotors) {
+      try {
+        setMotors(JSON.parse(savedMotors));
+      } catch (e) {
+        console.error("Errore nel parsing dei motori del slot:", e);
+      }
+    } else {
+      const globalMotors = localStorage.getItem('spike_motors');
+      if (globalMotors) {
+        try {
+          setMotors(JSON.parse(globalMotors));
+        } catch (e) {}
+      } else {
+        setMotors([
+          { id: 1, port: 'C', isTraction: true, isInverted: true },
+          { id: 2, port: 'D', isTraction: true, isInverted: false },
+          { id: 3, port: 'E', isTraction: false, isInverted: false },
+          { id: 4, port: '', isTraction: false, isInverted: false },
+        ]);
+      }
+    }
+
+    const savedSensors = localStorage.getItem(`spike_slot_${slot}_sensors`);
+    if (savedSensors) {
+      try {
+        setSensors(JSON.parse(savedSensors));
+      } catch (e) {
+        console.error("Errore nel parsing dei sensori del slot:", e);
+      }
+    } else {
+      const globalSensors = localStorage.getItem('spike_sensors');
+      if (globalSensors) {
+        try {
+          setSensors(JSON.parse(globalSensors));
+        } catch (e) {}
+      } else {
+        setSensors([
+          { id: 1, port: 'A', type: 'force', direction: 'down' },
+          { id: 2, port: 'B', type: 'color', direction: 'forward' },
+          { id: 3, port: 'F', type: 'distance', direction: 'down' },
+          { id: 4, port: '', type: '', direction: 'down' },
+        ]);
+      }
+    }
+
+    const savedWheelDiameter = localStorage.getItem(`spike_slot_${slot}_wheel_diameter`);
+    if (savedWheelDiameter) {
+      setWheelDiameter(parseFloat(savedWheelDiameter));
+    } else {
+      const globalWheelDiameter = localStorage.getItem('spike_wheel_diameter');
+      setWheelDiameter(globalWheelDiameter ? parseFloat(globalWheelDiameter) : 5.6);
+    }
+
+    const savedWheelDistance = localStorage.getItem(`spike_slot_${slot}_wheel_distance`);
+    if (savedWheelDistance) {
+      setWheelDistance(parseFloat(savedWheelDistance));
+    } else {
+      const globalWheelDistance = localStorage.getItem('spike_wheel_distance');
+      setWheelDistance(globalWheelDistance ? parseFloat(globalWheelDistance) : 11.5);
+    }
+
+    const savedMaxMotorSpeed = localStorage.getItem(`spike_slot_${slot}_max_motor_speed`);
+    if (savedMaxMotorSpeed) {
+      setMaxMotorSpeed(parseInt(savedMaxMotorSpeed));
+    } else {
+      const globalMaxMotorSpeed = localStorage.getItem('spike_max_motor_speed');
+      setMaxMotorSpeed(globalMaxMotorSpeed ? parseInt(globalMaxMotorSpeed) : 100);
+    }
   };
 
   const handleSlotChange = (newSlot: number) => {
     if (newSlot === currentSlot) return;
-    // Save current
+    // Save current workspace and code
     if (blocklyEditorRef.current) {
       const workspace = blocklyEditorRef.current.saveWorkspace();
       if (workspace) {
@@ -204,6 +318,13 @@ export default function App() {
     }
     localStorage.setItem(`spike_slot_${currentSlot}_python`, activeTab === 'blocks' ? blocklyCode : customCode);
     
+    // Save current robot configuration
+    localStorage.setItem(`spike_slot_${currentSlot}_motors`, JSON.stringify(motors));
+    localStorage.setItem(`spike_slot_${currentSlot}_sensors`, JSON.stringify(sensors));
+    localStorage.setItem(`spike_slot_${currentSlot}_wheel_diameter`, wheelDiameter.toString());
+    localStorage.setItem(`spike_slot_${currentSlot}_wheel_distance`, wheelDistance.toString());
+    localStorage.setItem(`spike_slot_${currentSlot}_max_motor_speed`, maxMotorSpeed.toString());
+
     // Switch
     setCurrentSlot(newSlot);
     localStorage.setItem('spike_current_slot', newSlot.toString());
@@ -218,6 +339,13 @@ export default function App() {
       if (workspace) localStorage.setItem(`spike_slot_${currentSlot}_workspace`, JSON.stringify(workspace));
     }
     localStorage.setItem(`spike_slot_${currentSlot}_python`, activeTab === 'blocks' ? blocklyCode : customCode);
+    
+    // Save current robot configuration for the active slot
+    localStorage.setItem(`spike_slot_${currentSlot}_motors`, JSON.stringify(motors));
+    localStorage.setItem(`spike_slot_${currentSlot}_sensors`, JSON.stringify(sensors));
+    localStorage.setItem(`spike_slot_${currentSlot}_wheel_diameter`, wheelDiameter.toString());
+    localStorage.setItem(`spike_slot_${currentSlot}_wheel_distance`, wheelDistance.toString());
+    localStorage.setItem(`spike_slot_${currentSlot}_max_motor_speed`, maxMotorSpeed.toString());
 
     const stringToHex = (str: string): string => {
       const encoder = new TextEncoder();
@@ -496,22 +624,27 @@ except Exception as root_e:
         if (data.motors) {
           setMotors(data.motors);
           localStorage.setItem('spike_motors', JSON.stringify(data.motors));
+          localStorage.setItem(`spike_slot_${currentSlot}_motors`, JSON.stringify(data.motors));
         }
         if (data.sensors) {
           setSensors(data.sensors);
           localStorage.setItem('spike_sensors', JSON.stringify(data.sensors));
+          localStorage.setItem(`spike_slot_${currentSlot}_sensors`, JSON.stringify(data.sensors));
         }
         if (data.wheelDiameter !== undefined) {
           setWheelDiameter(data.wheelDiameter);
           localStorage.setItem('spike_wheel_diameter', data.wheelDiameter.toString());
+          localStorage.setItem(`spike_slot_${currentSlot}_wheel_diameter`, data.wheelDiameter.toString());
         }
         if (data.wheelDistance !== undefined) {
           setWheelDistance(data.wheelDistance);
           localStorage.setItem('spike_wheel_distance', data.wheelDistance.toString());
+          localStorage.setItem(`spike_slot_${currentSlot}_wheel_distance`, data.wheelDistance.toString());
         }
         if (data.maxMotorSpeed !== undefined) {
           setMaxMotorSpeed(data.maxMotorSpeed);
           localStorage.setItem('spike_max_motor_speed', data.maxMotorSpeed.toString());
+          localStorage.setItem(`spike_slot_${currentSlot}_max_motor_speed`, data.maxMotorSpeed.toString());
         }
         
         if (data.pythonCode !== undefined) {
@@ -879,7 +1012,7 @@ except: pass
             <div className="w-12 h-12 rounded-md flex items-center justify-center shadow-sm overflow-hidden bg-white border-2 border-black">
               <img src={logoStaarr} alt="Logo Staarr" className="w-full h-full object-contain" />
             </div>
-            <h1 className="font-semibold tracking-tight text-3xl">OpenRobertə</h1>
+            <h1 className="font-semibold tracking-tight text-3xl">Robo</h1>
           </div>
           <div className="flex items-center gap-4">
             <button
@@ -1371,7 +1504,14 @@ except: pass
               </div>
             </div>
             
-            <div className="p-5 border-t-4 border-black bg-neutral-100 flex justify-end gap-3">
+            <div className="p-5 border-t-4 border-black bg-neutral-100 flex justify-between items-center gap-3">
+              <button 
+                onClick={resetToDefaultSetup}
+                className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 active:scale-95 text-neutral-800 font-bold rounded-xl border-2 border-neutral-400 hover:border-black transition-all text-xs uppercase tracking-wider"
+                title="Ripristina la configurazione predefinita di fabbrica"
+              >
+                Ripristina Default
+              </button>
               <button 
                 onClick={() => setIsSetupOpen(false)} 
                 className="px-6 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 active:scale-95 text-black font-extrabold rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all text-sm uppercase tracking-wider"
