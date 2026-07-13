@@ -716,7 +716,7 @@ pythonGenerator.forBlock['spike_distance_sensor'] = function(block: any, generat
 
 pythonGenerator.forBlock['spike_force_sensor'] = function(block: any, generator: any) {
   const port = block.getFieldValue('PORT');
-  const code = `_safe_sensor(force_sensor.force, port.${port}, 0)`; // simplified assuming port returns array
+  const code = `(_safe_sensor(force_sensor.force, port.${port}, 0) / 10)`; // converted from raw 0-100 to 0-10
   return [code, generator.ORDER_ATOMIC];
 };
 

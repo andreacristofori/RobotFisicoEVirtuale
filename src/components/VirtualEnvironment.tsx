@@ -1349,10 +1349,10 @@ export default function VirtualEnvironment({
       const p = String(port).toUpperCase();
       const reading = sensorReadingsRef.current[p];
       if (reading && reading.type === 'force') {
-        return reading.force > 0 ? 1 : 0;
+        return reading.force > 0 ? 100 : 0;
       }
       const fallback = Object.values(sensorReadingsRef.current).find((r: any) => r.type === 'force') as any;
-      return fallback ? (fallback.force > 0 ? 1 : 0) : 0;
+      return fallback ? (fallback.force > 0 ? 100 : 0) : 0;
     };
 
     const print = (text: any) => {
