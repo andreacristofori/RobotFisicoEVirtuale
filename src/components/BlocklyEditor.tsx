@@ -710,7 +710,7 @@ pythonGenerator.forBlock['spike_color_sensor'] = function(block: any, generator:
 
 pythonGenerator.forBlock['spike_distance_sensor'] = function(block: any, generator: any) {
   const port = block.getFieldValue('PORT');
-  const code = `_safe_sensor(distance_sensor.distance, port.${port}, -1)`; // simplified assuming port returns array
+  const code = `(_safe_sensor(distance_sensor.distance, port.${port}, -10) / 10)`; // converted from mm to cm for physical robot
   return [code, generator.ORDER_ATOMIC];
 };
 
